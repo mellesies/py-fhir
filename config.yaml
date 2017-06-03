@@ -1,0 +1,12 @@
+app_name: FHIR for Python
+
+applications:
+  unittest:
+    logging:
+      level:        DEBUG                  # Can be on of 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+      file:         logs/unittest.log      # Filename of logfile
+      use_console:  False                  # Log output to the console?
+      backup_count: 5                      # Number of logs to keep
+      max_size:     1024                   # Specified in kB (i.e. 1024 means a maximum file size of 1MB)
+      format:       "%(asctime)s - %(name)-14s - %(levelname)-8s - %(message)s"
+  

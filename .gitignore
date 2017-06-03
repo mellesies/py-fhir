@@ -1,0 +1,5 @@
+*.pyc
+fhir/model
+.vscode
+logs
+tmp.db
