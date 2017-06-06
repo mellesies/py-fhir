@@ -22,7 +22,12 @@ class TestPersistance(unittest.TestCase):
         name.use = 'official'
         name.given.append('Melle')
         name.given.append('Sjoerd')
-        name.family.append('Sieswerda')
+        
+        if fhir.model.VERSION == fhir.model.FHIR_DSTU2:
+            name.family = ['Sieswerda']
+        elif fhir.model.VERSION == fhir.model.FHIR_STU3:
+            name.family = 'Sieswerda'
+            
         self.p.name.append(name)
 
         self.p.deceased = fhir.model.dateTime('2016-12-01T00:00:00Z')

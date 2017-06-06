@@ -4,11 +4,11 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._code import code
 from ._string import string
+from ._code import code
 
 from .period import Period
 
@@ -33,9 +33,8 @@ class HumanName(Element):
     
     use = Property(PropertyDefinition('use', code, '0', '1'))
     text = Property(PropertyDefinition('text', string, '0', '1'))
-    family = Property(PropertyDefinition('family', string, '0', '*'))
+    family = Property(PropertyDefinition('family', string, '0', '1'))
     given = Property(PropertyDefinition('given', string, '0', '*'))
     prefix = Property(PropertyDefinition('prefix', string, '0', '*'))
     suffix = Property(PropertyDefinition('suffix', string, '0', '*'))
     period = Property(PropertyDefinition('period', Period, '0', '1'))
-    

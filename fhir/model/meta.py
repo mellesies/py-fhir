@@ -4,12 +4,12 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._instant import instant
-from ._uri import uri
 from ._id import id
+from ._uri import uri
+from ._instant import instant
 
 from .coding import Coding
 
@@ -39,4 +39,3 @@ class Meta(Element):
     profile = Property(PropertyDefinition('profile', uri, '0', '*'))
     security = Property(PropertyDefinition('security', Coding, '0', '*'))
     tag = Property(PropertyDefinition('tag', Coding, '0', '*'))
-    

@@ -11,10 +11,17 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import scoped_session, sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base, as_declarative, declared_attr
 
+import fhir.model
+
+__author__ = "Melle Sieswerda"
+__copyright__  = "Copyright 2017, Melle Sieswerda"
+__license__ = "GPL"
+__version__ = "0.8"
+
 Session = scoped_session(sessionmaker(autocommit=False, autoflush=False))
 object_session = Session.object_session
 
-import fhir.model
+
 
 # ------------------------------------------------------------------------------
 # Base
@@ -37,7 +44,7 @@ class Base(object):
     @property
     def log(self):
         return logging.getLogger(self.__class__.__name__)
-
+# class Base
 
 class Resource(Base):
     """Example DB model class."""
@@ -48,7 +55,7 @@ class Resource(Base):
     id = Column(String(50), index=True, unique=True)
     type = Column(String(50), index=True)
     xml = Column(Text)
-
+# class Resource
 
 class FHIRStore(object):
     def __init__(self, URI='sqlite:///tmp.db', drop_all=False):
@@ -88,15 +95,4 @@ class FHIRStore(object):
     def delete(self, resource):
         """Delete a Resource from the database."""
         pass
-# ------------------------------------------------------------------------------
-# Example
-# ------------------------------------------------------------------------------
-# class Example(Base):
-#     """Example DB model class."""
-
-#     id = Column(Integer, primary_key=True)
-
-#     # Attributes
-#     name = Column(String(50))
-#     state = Column(Boolean)
-
+# class FHIRStore

@@ -4,12 +4,12 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._string import string
-from ._positiveint import positiveInt
 from ._decimal import decimal
+from ._positiveint import positiveInt
+from ._string import string
 
 from .quantity import Quantity
 
@@ -40,4 +40,3 @@ class SampledData(Element):
     upperLimit = Property(PropertyDefinition('upperLimit', decimal, '0', '1'))
     dimensions = Property(PropertyDefinition('dimensions', positiveInt, '1', '1'))
     data = Property(PropertyDefinition('data', string, '1', '1'))
-    

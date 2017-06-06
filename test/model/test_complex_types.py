@@ -17,7 +17,11 @@ class TestComplexTypes(unittest.TestCase):
         name.use = 'official'
         name.given.append('Melle')
         name.given.append('Sjoerd')
-        name.family.append('Sieswerda')
+        
+        if fhir.model.VERSION == fhir.model.FHIR_DSTU2:
+            name.family = ['Sieswerda']
+        elif fhir.model.VERSION == fhir.model.FHIR_STU3:
+            name.family = 'Sieswerda'
 
         # print(name.toXML())
         

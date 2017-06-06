@@ -33,10 +33,6 @@ class TestMultiple(unittest.TestCase):
         x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(m.toXML())
 
-        # print('')
-        # print('')
-        # print(m.toXML())
-
         self.assertTrue(xml_compare(x1, x2), 'Serialized DomainReource does not match expected XML representation!')
 
     def test_multipleDateTime(self):

@@ -4,13 +4,13 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
+from ._code import code
+from ._boolean import boolean
 from ._uri import uri
 from ._string import string
-from ._boolean import boolean
-from ._code import code
 
 
 __author__ = "Melle Sieswerda"
@@ -37,4 +37,3 @@ class Coding(Element):
     code = Property(PropertyDefinition('code', code, '0', '1'))
     display = Property(PropertyDefinition('display', string, '0', '1'))
     userSelected = Property(PropertyDefinition('userSelected', boolean, '0', '1'))
-    

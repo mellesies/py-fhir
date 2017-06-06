@@ -4,16 +4,15 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._code import code
-from ._uri import uri
 from ._string import string
+from ._uri import uri
+from ._code import code
 
 from .period import Period
 from .codeableconcept import CodeableConcept
-from .reference import Reference
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"
@@ -40,5 +39,4 @@ class Identifier(Element):
     system = Property(PropertyDefinition('system', uri, '0', '1'))
     value = Property(PropertyDefinition('value', string, '0', '1'))
     period = Property(PropertyDefinition('period', Period, '0', '1'))
-    assigner = Property(PropertyDefinition('assigner', Reference(reference="http://hl7.org/fhir/StructureDefinition/Organization"), '0', '1'))
-    
+    assigner = Property(PropertyDefinition('assigner', Reference(reference="None"), '0', '1'))

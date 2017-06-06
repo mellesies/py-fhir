@@ -4,14 +4,16 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._uri import uri
 from ._id import id
+from ._uri import uri
 from ._code import code
 
 from .meta import Meta
+
+import xml.etree.ElementTree as ET
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"
@@ -36,4 +38,18 @@ class Resource(FHIRBase):
     meta = Property(PropertyDefinition('meta', Meta, '0', '1'))
     implicitRules = Property(PropertyDefinition('implicitRules', uri, '0', '1'))
     language = Property(PropertyDefinition('language', code, '0', '1'))
+
     
+    def toXML(self, parent=None, path=None):
+        """Return an XML representation of this object."""
+        tag = self.__class__.__name__
+        
+        if parent is None:
+            parent = ET.Element(tag)
+            parent.set('xmlns', 'http://hl7.org/fhir')
+            path = [tag, ]
+        else:
+            # Resources *always* render their type tag (e.g. '<Patient>')
+            parent = ET.SubElement(parent, tag)
+        
+        return super().toXML(parent, path)

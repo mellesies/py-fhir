@@ -4,15 +4,15 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._base64binary import base64Binary
-from ._string import string
-from ._code import code
-from ._uri import uri
-from ._datetime import dateTime
 from ._unsignedint import unsignedInt
+from ._datetime import dateTime
+from ._code import code
+from ._string import string
+from ._uri import uri
+from ._base64binary import base64Binary
 
 
 __author__ = "Melle Sieswerda"
@@ -42,4 +42,3 @@ class Attachment(Element):
     hash = Property(PropertyDefinition('hash', base64Binary, '0', '1'))
     title = Property(PropertyDefinition('title', string, '0', '1'))
     creation = Property(PropertyDefinition('creation', dateTime, '0', '1'))
-    

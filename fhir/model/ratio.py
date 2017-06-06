@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
 
@@ -32,4 +32,3 @@ class Ratio(Element):
     
     numerator = Property(PropertyDefinition('numerator', Quantity, '0', '1'))
     denominator = Property(PropertyDefinition('denominator', Quantity, '0', '1'))
-    

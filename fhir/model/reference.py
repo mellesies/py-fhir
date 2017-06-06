@@ -4,11 +4,12 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
 from ._string import string
 
+from .identifier import Identifier
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"
@@ -30,5 +31,5 @@ class Reference(Element):
     _url = 'http://hl7.org/fhir/StructureDefinition/Reference'
     
     reference = Property(PropertyDefinition('reference', string, '0', '1'))
+    identifier = Property(PropertyDefinition('identifier', Identifier, '0', '1'))
     display = Property(PropertyDefinition('display', string, '0', '1'))
-    

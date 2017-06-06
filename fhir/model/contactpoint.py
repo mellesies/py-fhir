@@ -4,12 +4,12 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._code import code
-from ._positiveint import positiveInt
 from ._string import string
+from ._positiveint import positiveInt
+from ._code import code
 
 from .period import Period
 
@@ -38,4 +38,3 @@ class ContactPoint(Element):
     use = Property(PropertyDefinition('use', code, '0', '1'))
     rank = Property(PropertyDefinition('rank', positiveInt, '0', '1'))
     period = Property(PropertyDefinition('period', Period, '0', '1'))
-    

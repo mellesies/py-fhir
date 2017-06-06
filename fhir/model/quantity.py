@@ -4,13 +4,13 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._code import code
-from ._uri import uri
 from ._string import string
 from ._decimal import decimal
+from ._uri import uri
+from ._code import code
 
 
 __author__ = "Melle Sieswerda"
@@ -40,4 +40,3 @@ class Quantity(Element):
     unit = Property(PropertyDefinition('unit', string, '0', '1'))
     system = Property(PropertyDefinition('system', uri, '0', '1'))
     code = Property(PropertyDefinition('code', code, '0', '1'))
-    

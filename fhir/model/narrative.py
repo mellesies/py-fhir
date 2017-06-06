@@ -4,11 +4,11 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
-from ._code import code
 from ._xhtml import xhtml
+from ._code import code
 
 
 __author__ = "Melle Sieswerda"
@@ -31,5 +31,4 @@ class Narrative(Element):
     _url = 'http://hl7.org/fhir/StructureDefinition/Narrative'
     
     status = Property(PropertyDefinition('status', code, '1', '1'))
-    div = Property(PropertyDefinition('div', xhtml, '1', '1'))
-    
+    div = Property(PropertyDefinition('div', xhtml, '1', '1', 'text'))

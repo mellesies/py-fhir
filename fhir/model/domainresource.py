@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 from .resource import Resource
 
@@ -35,4 +35,3 @@ class DomainResource(Resource):
     contained = Property(PropertyDefinition('contained', Resource, '0', '*'))
     extension = Property(PropertyDefinition('extension', Extension, '0', '*'))
     modifierExtension = Property(PropertyDefinition('modifierExtension', Extension, '0', '*'))
-    

@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
 from ._datetime import dateTime
@@ -31,4 +31,3 @@ class Period(Element):
     
     start = Property(PropertyDefinition('start', dateTime, '0', '1'))
     end = Property(PropertyDefinition('end', dateTime, '0', '1'))
-    

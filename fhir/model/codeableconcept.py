@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
 from ._string import string
@@ -33,4 +33,3 @@ class CodeableConcept(Element):
     
     coding = Property(PropertyDefinition('coding', Coding, '0', '*'))
     text = Property(PropertyDefinition('text', string, '0', '1'))
-    

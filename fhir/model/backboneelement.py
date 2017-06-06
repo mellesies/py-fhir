@@ -4,7 +4,7 @@ import datetime as dt
 import logging
 
 from . import Property, PropertyDefinition
-from . import FHIRBase, Element, Extension
+from . import FHIRBase, Element, Extension, Reference
 
 
 
@@ -30,4 +30,3 @@ class BackboneElement(Element):
     _url = 'http://hl7.org/fhir/StructureDefinition/BackboneElement'
     
     modifierExtension = Property(PropertyDefinition('modifierExtension', Extension, '0', '*'))
-    
