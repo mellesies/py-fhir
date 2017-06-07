@@ -9,8 +9,8 @@ from . import FHIRBase, Element, Extension, Reference
 
 from ._base64binary import base64Binary
 from ._code import code
-from ._uri import uri
 from ._instant import instant
+from ._uri import uri
 
 from .coding import Coding
 

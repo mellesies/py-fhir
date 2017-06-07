@@ -9,21 +9,21 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .domainresource import DomainResource
 
-from ._datetime import dateTime
-from ._integer import integer
-from ._code import code
 from ._boolean import boolean
-from ._decimal import decimal
-from ._string import string
-from ._uri import uri
+from ._code import code
 from ._date import date
+from ._datetime import dateTime
+from ._decimal import decimal
+from ._integer import integer
+from ._string import string
 from ._time import time
+from ._uri import uri
 
-from .quantity import Quantity
 from .attachment import Attachment
 from .backboneelement import BackboneElement
 from .coding import Coding
 from .identifier import Identifier
+from .quantity import Quantity
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

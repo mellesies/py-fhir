@@ -9,25 +9,25 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .domainresource import DomainResource
 
-from ._datetime import dateTime
-from ._integer import integer
-from ._code import code
 from ._boolean import boolean
-from ._decimal import decimal
-from ._string import string
-from ._uri import uri
+from ._code import code
 from ._date import date
+from ._datetime import dateTime
+from ._decimal import decimal
+from ._integer import integer
 from ._markdown import markdown
+from ._string import string
 from ._time import time
+from ._uri import uri
 
+from .attachment import Attachment
+from .backboneelement import BackboneElement
+from .codeableconcept import CodeableConcept
+from .coding import Coding
+from .contactdetail import ContactDetail
+from .identifier import Identifier
 from .period import Period
 from .quantity import Quantity
-from .attachment import Attachment
-from .contactdetail import ContactDetail
-from .backboneelement import BackboneElement
-from .coding import Coding
-from .codeableconcept import CodeableConcept
-from .identifier import Identifier
 from .usagecontext import UsageContext
 
 __author__ = "Melle Sieswerda"

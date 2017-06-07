@@ -7,10 +7,10 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
-from ._string import string
-from ._decimal import decimal
-from ._uri import uri
 from ._code import code
+from ._decimal import decimal
+from ._string import string
+from ._uri import uri
 
 
 __author__ = "Melle Sieswerda"

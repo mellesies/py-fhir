@@ -9,16 +9,16 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .resource import Resource
 
-from ._unsignedint import unsignedInt
 from ._code import code
 from ._decimal import decimal
-from ._string import string
-from ._uri import uri
 from ._instant import instant
+from ._string import string
+from ._unsignedint import unsignedInt
+from ._uri import uri
 
-from .signature import Signature
-from .identifier import Identifier
 from .backboneelement import BackboneElement
+from .identifier import Identifier
+from .signature import Signature
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

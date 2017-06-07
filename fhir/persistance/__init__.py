@@ -73,7 +73,7 @@ class FHIRStore(object):
 
         persisted_resource = session.query(Resource).filter_by(id=str(id)).one()
         cls = getattr(fhir.model, persisted_resource.type)
-        return cls.marshallXML(persisted_resource.xml)
+        return cls.fromXML(persisted_resource.xml)
     
     def post(self, resource):
         """Create a Resource in the database."""

@@ -7,8 +7,8 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
-from ._xhtml import xhtml
 from ._code import code
+from ._xhtml import xhtml
 
 
 __author__ = "Melle Sieswerda"

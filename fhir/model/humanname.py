@@ -7,8 +7,8 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
-from ._string import string
 from ._code import code
+from ._string import string
 
 from .period import Period
 

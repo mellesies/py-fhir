@@ -9,15 +9,15 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .domainresource import DomainResource
 
-from ._string import string
-from ._datetime import dateTime
 from ._code import code
+from ._datetime import dateTime
+from ._string import string
 
-from .period import Period
 from .backboneelement import BackboneElement
-from .narrative import Narrative
 from .codeableconcept import CodeableConcept
 from .identifier import Identifier
+from .narrative import Narrative
+from .period import Period
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

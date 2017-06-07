@@ -7,12 +7,12 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
-from ._unsignedint import unsignedInt
-from ._datetime import dateTime
-from ._code import code
-from ._string import string
-from ._uri import uri
 from ._base64binary import base64Binary
+from ._code import code
+from ._datetime import dateTime
+from ._string import string
+from ._unsignedint import unsignedInt
+from ._uri import uri
 
 
 __author__ = "Melle Sieswerda"

@@ -135,7 +135,11 @@ def get_type(type_):
 # ------------------------------------------------------------------------------
 class PropertyCardinalityError(Exception):
     def __init__(self, method, description):
-        message = "Cannot {} property '{}': cardinality [{}..{}]"
+        if description.cmax == 1:
+            message = "Cannot {} a list as value for property '{}': cardinality [{}..{}]"
+        else:
+            message = "Cannot {} property '{}': cardinality [{}..{}]"
+            
         message = message.format(method, description.name, description.cmin, description.cmax)
         super(PropertyCardinalityError, self).__init__(message)
 # class PropertyCardinalityError
@@ -300,8 +304,11 @@ class Property(PropertyMixin):
             
             else:
                 raise PropertyCardinalityError('set', self.definition)
-
+        
         else:
+            if isinstance(value, list):
+                raise PropertyCardinalityError('set', self.definition)
+                
             instance._property_values[self.name] = self.coerce_type(value)
 
     
@@ -391,7 +398,7 @@ class FHIRBase(object):
     # def _getProperties
 
     @classmethod
-    def marshallXML(cls, xmlstring):
+    def fromXML(cls, xmlstring):
         """Marshall a Resource from its XML representation."""
         # Remove the default namespace definition, makes life a bit easier
         # when using ElementTree.
@@ -404,8 +411,8 @@ class FHIRBase(object):
         if root.tag != cls.__name__:
             print('*** WARNING: trying to marshall a {} in a {} ***'.format(root.tag, cls.__name__))
         
-        return cls()._marshallXML(root)
-    # def marshallXML_
+        return cls()._fromXML(root)
+    # def fromXML_
     
     def _getPropertyDetailsForTag(self, name):
         """Return Property and (expected) type for attribute with 'name'."""
@@ -440,7 +447,7 @@ class FHIRBase(object):
         return property_, property_.definition, type_
     # def _getPropertyForTag
     
-    def _marshallXML(self, xml):
+    def _fromXML(self, xml):
         # Iterate over *my* properties.
         for tag in xml:
             ns, tag_name = split_namespace(tag)
@@ -459,12 +466,12 @@ class FHIRBase(object):
                 resource_element = children[0]
                 resource_type = get_type(resource_element.tag)
                 value = resource_type()
-                value._marshallXML(resource_element)
+                value._fromXML(resource_element)
                 
             # Then it must be a simple or complex type
             else:
                 value = prop_type(**tag.attrib)
-                value._marshallXML(tag)
+                value._fromXML(tag)
 
             if prop_def.cmax == 1:
                 setattr(self, prop.name, value)
@@ -472,7 +479,7 @@ class FHIRBase(object):
                 getattr(self, prop.name).append(value)
 
         return self
-    # def _marshallXML
+    # def _fromXML
 
     @classmethod
     def fromPythonObject(cls, python_object, level=1, type_=None):
@@ -534,26 +541,26 @@ class FHIRBase(object):
     # def fromPythonObject
 
     @classmethod
-    def marshallJSON(cls, jsonstring):
+    def fromJSON(cls, jsonstring):
         """Marshall a Resource from its JSON representation."""
         jsondict = json.loads(jsonstring)
         return cls.fromPythonObject(jsondict)
-    # def marshallJSON
+    # def fromJSON
 
-    def serialize(self, format_='xml'):
+    def dumps(self, format_='xml'):
         if format_ in ['xml', 'json']:
             format_ = format_.upper()
             func = getattr(self, 'to' + format_)
             return func()
-    # def serialize
+    # def dumps
 
     def toNative(self):
         return self.toDict()
     # def toNative
 
-    def toDict(self, level=0):
+    def toDict(self):
         """Return a dictionary representation of this object."""
-        retval = dict()
+        retval = OrderedDict()
 
         if isinstance(self, Resource):            
             retval['resourceType'] = self.__class__.__name__
@@ -572,7 +579,7 @@ class FHIRBase(object):
                 if value != None:
                     retval[attr] = v
 
-                json_dict = value.toDict(level)
+                json_dict = value.toDict()
                 if json_dict:
                     retval['_' + attr] = json_dict
                 
@@ -588,7 +595,7 @@ class FHIRBase(object):
                             _v = None
                         _listvalues.append(_v)
                     else:
-                        listvalues.append( v.toDict(level+1) )
+                        listvalues.append( v.toDict() )
                 
                 if listvalues:
                     retval[attr] = listvalues
@@ -598,7 +605,7 @@ class FHIRBase(object):
                     retval['_' + attr] = _listvalues
 
             elif isinstance(value, Element):
-                json_dict = value.toDict(level+1)
+                json_dict = value.toDict()
 
                 if json_dict:
                     retval[attr] = json_dict
@@ -654,7 +661,7 @@ class FHIRBase(object):
             
 class Element(FHIRBase):
     """Base definition for all elements in a resource."""
-    _timestamp = 1496784494
+    _timestamp = 1496867578
     _url = 'http://hl7.org/fhir/StructureDefinition/Element'
     
     id = Property(PropertyDefinition('id', 'id', '0', '1'))

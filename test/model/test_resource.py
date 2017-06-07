@@ -14,14 +14,6 @@ from fhir.model.codeableconcept import CodeableConcept, Coding
 class TestResource(unittest.TestCase):
     
 
-    def test_observationToJSON(self):
-        o = fhir.model.Observation()
-
-
-    def test_compositionToJSON(self):
-        c = fhir.model.Composition()
-
-
     def test_assignmentError(self):
         p = fhir.model.Patient()
         name = fhir.model.HumanName()
@@ -31,3 +23,6 @@ class TestResource(unittest.TestCase):
 
         with self.assertRaises(fhir.model.PropertyCardinalityError):
             name.given = 'should have called append'
+
+        with self.assertRaises(fhir.model.PropertyCardinalityError):
+            p.id = ['should not be able to assign list']

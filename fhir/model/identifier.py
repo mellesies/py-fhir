@@ -7,12 +7,12 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
+from ._code import code
 from ._string import string
 from ._uri import uri
-from ._code import code
 
-from .period import Period
 from .codeableconcept import CodeableConcept
+from .period import Period
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

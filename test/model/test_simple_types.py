@@ -57,6 +57,7 @@ class TestSimpleTypes(unittest.TestCase):
 
 
     def test_boolean(self):
+        # Using native Python values
         t = fhir.model.boolean(True)
         f = fhir.model.boolean(False)
         
@@ -68,8 +69,8 @@ class TestSimpleTypes(unittest.TestCase):
         self.assertEquals(t and t, True)
         self.assertEquals(t or f, True)
         self.assertEquals(f, False)
-    
-    def test_boolean2(self):
+        
+        # Using JSON (string) values
         t = fhir.model.boolean("true")
         f = fhir.model.boolean("false")
         

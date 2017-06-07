@@ -9,22 +9,22 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .domainresource import DomainResource
 
-from ._datetime import dateTime
-from ._code import code
 from ._boolean import boolean
-from ._string import string
+from ._code import code
+from ._datetime import dateTime
 from ._instant import instant
+from ._string import string
 from ._time import time
 
-from .sampleddata import SampledData
-from .period import Period
-from .quantity import Quantity
-from .ratio import Ratio
 from .attachment import Attachment
 from .backboneelement import BackboneElement
-from .range import Range
 from .codeableconcept import CodeableConcept
 from .identifier import Identifier
+from .period import Period
+from .quantity import Quantity
+from .range import Range
+from .ratio import Ratio
+from .sampleddata import SampledData
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

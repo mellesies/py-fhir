@@ -9,20 +9,20 @@ from . import FHIRBase, Element, Extension, Reference
 from .backboneelement import BackboneElement
 from .domainresource import DomainResource
 
+from ._boolean import boolean
+from ._code import code
+from ._date import date
 from ._datetime import dateTime
 from ._integer import integer
-from ._code import code
-from ._boolean import boolean
-from ._date import date
 
-from .humanname import HumanName
-from .period import Period
-from .contactpoint import ContactPoint
+from .address import Address
 from .attachment import Attachment
 from .backboneelement import BackboneElement
-from .address import Address
-from .identifier import Identifier
 from .codeableconcept import CodeableConcept
+from .contactpoint import ContactPoint
+from .humanname import HumanName
+from .identifier import Identifier
+from .period import Period
 
 __author__ = "Melle Sieswerda"
 __copyright__  = "Copyright 2017, Melle Sieswerda"

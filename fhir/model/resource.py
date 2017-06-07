@@ -7,9 +7,9 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
+from ._code import code
 from ._id import id
 from ._uri import uri
-from ._code import code
 
 from .meta import Meta
 

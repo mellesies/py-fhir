@@ -7,9 +7,9 @@ from . import Property, PropertyDefinition
 from . import FHIRBase, Element, Extension, Reference
 
 
-from ._string import string
-from ._positiveint import positiveInt
 from ._code import code
+from ._positiveint import positiveInt
+from ._string import string
 
 from .period import Period
 

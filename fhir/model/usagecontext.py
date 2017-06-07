@@ -8,8 +8,8 @@ from . import FHIRBase, Element, Extension, Reference
 
 
 
-from .coding import Coding
 from .codeableconcept import CodeableConcept
+from .coding import Coding
 from .quantity import Quantity
 from .range import Range
 
