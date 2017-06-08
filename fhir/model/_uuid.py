@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition, BaseType, dateTimeBase
+from . import Property, DateTimeProperty, PropertyDefinition, BaseType, dateTimeBase
 
 __all__ = ['uuid', ]
 

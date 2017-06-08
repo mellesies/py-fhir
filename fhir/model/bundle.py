@@ -17,7 +17,6 @@ from ._unsignedint import unsignedInt
 from ._uri import uri
 
 from .backboneelement import BackboneElement
-from .identifier import Identifier
 from .signature import Signature
 
 __author__ = "Melle Sieswerda"
@@ -61,7 +60,6 @@ class Response(BackboneElement):
     location = Property(PropertyDefinition('location', 'uri', '0', '1'))    
     etag = Property(PropertyDefinition('etag', 'string', '0', '1'))    
     lastModified = Property(PropertyDefinition('lastModified', 'instant', '0', '1'))    
-    outcome = Property(PropertyDefinition('outcome', 'Resource', '0', '1'))    
 
 
 # ------------------------------------------------------------------------------
@@ -75,7 +73,6 @@ class Bundle(Resource):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Bundle'
     
-    identifier = Property(PropertyDefinition('identifier', Identifier, '0', '1'))
     type = Property(PropertyDefinition('type', code, '1', '1'))
     total = Property(PropertyDefinition('total', unsignedInt, '0', '1'))
     link = Property(PropertyDefinition('link', Link, '0', '*'))

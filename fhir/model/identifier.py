@@ -39,4 +39,4 @@ class Identifier(Element):
     system = Property(PropertyDefinition('system', uri, '0', '1'))
     value = Property(PropertyDefinition('value', string, '0', '1'))
     period = Property(PropertyDefinition('period', Period, '0', '1'))
-    assigner = Property(PropertyDefinition('assigner', Reference(reference="None"), '0', '1'))
+    assigner = Property(PropertyDefinition('assigner', Reference(reference="http://hl7.org/fhir/StructureDefinition/Organization"), '0', '1'))

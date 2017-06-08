@@ -53,7 +53,6 @@ __all__ = [
     'CodeableConcept',
     'Coding',
     'Composition',
-    'ContactDetail',
     'ContactPoint',
     'DomainResource',
     'Element',
@@ -75,13 +74,13 @@ __all__ = [
     'Reference',
     'SampledData',
     'Signature',
-    'UsageContext',
 ]
 
 # Module global
 FHIR_STU3 = packaging.version.parse('3.0.1')
 FHIR_DSTU2 = packaging.version.parse('1.0.2')
-VERSION = packaging.version.parse('3.0.1')
+VERSION = packaging.version.parse('1.0.2')
+VERSION_STR = '1.0.2'
 
 inf = float('inf')
 
@@ -311,11 +310,17 @@ class Property(PropertyMixin):
                 
             instance._property_values[self.name] = self.coerce_type(value)
 
-    
     def __repr__(self):
         s = 'Property({})'.format(self.definition)
         return s
 # class Property
+
+class DateTimeProperty(Property):
+    def __set__(self, instance, value):
+        if value is not None:
+            instance._checkRegEx(value)
+        super().__set__(instance, value)
+# class DateTimeProperty
 
 class PropertyList(list, PropertyMixin):
     """PropertyList is used by Property when cardinality > 1."""
@@ -363,7 +368,10 @@ class FHIRBase(object):
 
     def __init__(self, **kwargs):
         """Create a new instance."""
-        self._property_values = dict()
+        # self._property_values = dict()
+        self.__dict__['_property_values'] = dict()
+        self.__dict__['log'] = logging.getLogger(self.__class__.__name__)
+        
         for attr, value in kwargs.items():
             setattr(self, attr, value)
     # def __init__
@@ -380,14 +388,15 @@ class FHIRBase(object):
         super().__setattr__(attr, value)
     # def __setattr__
 
-    def _getProperties(self):
+    @classmethod
+    def _getProperties(cls):
         """Return a list of attribute names that are of type 'Property'. 
         
             The list is sorted by order of definition.
         """
         properties = []
-        for attr in dir(type(self)):
-            a = getattr(type(self), attr)
+        for attr in dir(cls):
+            a = getattr(cls, attr)
             if isinstance(a, Property):
                 properties.append(a)
                 
@@ -398,27 +407,13 @@ class FHIRBase(object):
     # def _getProperties
 
     @classmethod
-    def fromXML(cls, xmlstring):
-        """Marshall a Resource from its XML representation."""
-        # Remove the default namespace definition, makes life a bit easier
-        # when using ElementTree.
-        xmlstring = re.sub('\\sxmlns="[^"]+"', '', xmlstring, count=1)
-        
-        # Parse the string using ElementTree
-        root = ET.fromstring(xmlstring)
-        
-        # Sanity check
-        if root.tag != cls.__name__:
-            print('*** WARNING: trying to marshall a {} in a {} ***'.format(root.tag, cls.__name__))
-        
-        return cls()._fromXML(root)
-    # def fromXML_
-    
-    def _getPropertyDetailsForTag(self, name):
+    def _getPropertyDetailsForName(cls, name):
         """Return Property and (expected) type for attribute with 'name'."""
-        if not hasattr(self.__class__, name):
+        name = name.replace('_', '')
+        
+        if not hasattr(cls, name):
             # We might be dealing with a value[x] property!
-            for attr in self._getProperties():
+            for attr in cls._getProperties():
                 if name.startswith(attr):
                     # valueBoolean --> boolean
                     type_ = lower_first_letter(name.replace(attr, ''))
@@ -429,12 +424,12 @@ class FHIRBase(object):
             else:
                 # If no break occurred.
                 msg = "Cannot find property '{}' on resource '{}'"
-                raise Exception(msg.format(name, self.__class__.__name__))
+                raise Exception(msg.format(name, cls.__name__))
         else:
             type_ = ''
         
         # Get the Property
-        property_ = getattr(self.__class__, name)        
+        property_ = getattr(cls, name)        
 
         # If type_ was not explicitly defined by the tag name, get it from the
         # definition.
@@ -445,13 +440,37 @@ class FHIRBase(object):
         type_ = get_type(type_)
 
         return property_, property_.definition, type_
-    # def _getPropertyForTag
+    # def _getPropertyDetailsForName
+    
+    @classmethod
+    def fromXML(cls, xmlstring):
+        """Marshall a Resource from its XML representation."""
+        log = logging.getLogger(cls.__name__)
+        # Remove the default namespace definition, makes life a bit easier
+        # when using ElementTree.
+        xmlstring = re.sub('\\sxmlns="[^"]+"', '', xmlstring, count=1)
+        
+        # Parse the string using ElementTree
+        root = ET.fromstring(xmlstring)
+        
+        # Sanity check
+        if root.tag != cls.__name__:
+            # log.warn('*** WARNING: trying to marshall a {} in a {} ***'.format(root.tag, cls.__name__))
+            class_ = get_type(root.tag)
+            
+            if not issubclass(class_, cls):
+                raise Exception('Cannot marshall a {} from a {}: not a subclass!'.format(root.tag, cls.__name__))
+            
+            return class_()._fromXML(root)
+        
+        return cls()._fromXML(root)
+    # def fromXML_
     
     def _fromXML(self, xml):
         # Iterate over *my* properties.
         for tag in xml:
             ns, tag_name = split_namespace(tag)
-            prop, prop_def, prop_type = self._getPropertyDetailsForTag(tag_name)
+            prop, prop_def, prop_type = self._getPropertyDetailsForName(tag_name)
             
             # If the namespace is xhtml, we shouldn't parse the tree any 
             # further and just try to assign the xhtml to the property.
@@ -482,70 +501,98 @@ class FHIRBase(object):
     # def _fromXML
 
     @classmethod
-    def fromPythonObject(cls, python_object, level=1, type_=None):
-        """python_object can be a dict, list, str, int, float, bool."""
-        try:
-            resourceType = python_object.pop('resourceType')
-
-            if resourceType != cls.__name__:
-                print('*** WARNING: trying to marshall a {} in a {} ***'.format(resourceType, cls.__name__))
-        except:
-            pass
-
-        spaces = ' ' * level
-
-        if isinstance(python_object, dict):
-            # dict --> resource or complex type
-            instance = cls()
-
-            # First process any entries prefixed with an underscore ('_')
-            for attr_name, attr_value in python_object.items():
-                if not attr_name.startswith('_'):
-                    continue
-
-                attr_name = attr_name.replace('_', '')
-                attr_cls = getattr(cls, attr_name).definition.type
-                if isinstance(attr_cls, str):
-                    attr_cls = getattr(sys.modules[__name__], attr_cls)
-
-                # instance.attr_name = attr_cls.fromPythonObject(attr_value)
-                setattr(instance, attr_name, attr_cls.fromPythonObject(attr_value, level+1))
-
-            # Next, process all regular entries.
-            for attr_name, attr_value in python_object.items():
-                if attr_name.startswith('_'):
-                    continue
-                
-                attr_cls = getattr(cls, attr_name).definition.type
-                if isinstance(attr_cls, str):
-                    attr_cls = getattr(sys.modules[__name__], attr_cls)
-                
-                attr = getattr(instance, attr_name)
-
-                if isinstance(attr, Element):
-                    # Existing attribute (already set through underscore definition)
-                    # Need to *update* the existing thing instead of replacing it.
-                    attr.value = attr_value
-
-                else:
-                    setattr(instance, attr_name, attr_cls.fromPythonObject(attr_value, level+1))
-
-            return instance
-
-        if isinstance(python_object, list):
-            # list --> PropertyList
-            return [cls.fromPythonObject(i) for i in python_object]
-
-        # simple value!
-        return python_object
-    # def fromPythonObject
-
-    @classmethod
     def fromJSON(cls, jsonstring):
         """Marshall a Resource from its JSON representation."""
         jsondict = json.loads(jsonstring)
-        return cls.fromPythonObject(jsondict)
+        resourceType = jsondict.pop('resourceType')
+
+        if resourceType != cls.__name__:
+            class_ = get_type(resourceType)
+            
+            if not issubclass(class_, cls):
+                raise Exception('Cannot marshall a {} from a {}: not a subclass!'.format(root.tag, cls.__name__))
+            
+            return class_()._fromJSON(jsondict)
+            
+        return cls()._fromJSON(jsondict)
     # def fromJSON
+
+    def _fromJSON(self, obj):
+        if isinstance(obj, dict):
+            # Complex type defining *my* attributes
+            return self._fromDict(obj)
+
+        if isinstance(obj, list):
+            # List with values for self.attr_name
+            return 
+        
+        # Simple type!
+        return obj
+
+    def _fromDict(self, jsondict):
+        # Iterate over *my* attributes
+        processed = []
+        
+        # First the keys starting with an underscore ('_')
+        # These items contain the extended information for simple
+        # types: {'id': 'patient1', '_id': {'id': 'id.id'}}
+        for attr, obj in jsondict.items():
+            if not attr.startswith('_'):
+                continue
+            
+            prop, prop_def, prop_type = self._getPropertyDetailsForName(attr)
+            attr = attr.replace('_', '', 1)
+            
+            regular_value = jsondict.get(attr)
+            
+            if isinstance(obj, dict):
+                # Complex type
+                value = prop_type(regular_value)
+                value._fromDict(obj)
+                    
+            elif isinstance(obj, list):
+                # Should be a list of dicts
+                value = [prop_type(v) for v in regular_value]
+                for v, extended_info in zip(value, obj):
+                    v._fromDict(extended_info)
+            
+            value = prop_type(regular_value)
+            value._fromDict(obj)
+            
+            setattr(self, prop.name, value)
+            processed.append(attr)
+        
+        # Then the regular keys/attributes
+        for attr, obj in jsondict.items():
+            # obj can be dict, list or simple type            
+            if attr.startswith('_') or attr in processed:
+                continue
+                
+            prop, prop_def, prop_type = self._getPropertyDetailsForName(attr)
+            
+            if issubclass(prop_type, Resource):
+                resourceType = obj.pop('resourceType')
+                class_ = get_type(resourceType)
+                value = class_()._fromJSON(obj)
+            
+            elif isinstance(obj, dict):
+                # Complex type
+                value = prop_type()
+                value._fromDict(obj)
+                    
+            elif isinstance(obj, list):
+                # Could be a list of dicts or simple values;
+                value = [prop_type()._fromJSON(i) for i in obj]
+                
+            else:
+                value = prop_type(obj)
+
+            setattr(self, prop.name, value)
+            
+        return self
+    # def _fromDict
+
+
 
     def dumps(self, format_='xml'):
         if format_ in ['xml', 'json']:
@@ -576,7 +623,7 @@ class FHIRBase(object):
                     attr = attr + class_name 
 
                 v = value.toNative()
-                if value != None:
+                if v != None:
                     retval[attr] = v
 
                 json_dict = value.toDict()
@@ -604,7 +651,7 @@ class FHIRBase(object):
                 if sum(map(lambda x: x != None, _listvalues)) > 0:
                     retval['_' + attr] = _listvalues
 
-            elif isinstance(value, Element):
+            elif isinstance(value, FHIRBase):
                 json_dict = value.toDict()
 
                 if json_dict:
@@ -630,7 +677,9 @@ class FHIRBase(object):
                 if desc.repr == 'xmlAttr':
                     parent.set(attr, str(value))
             
+                # elif issubclass(desc.type, xhtml):
                 elif desc.repr == 'text':
+                    # print(desc.type, type(desc.type))
                     parent.append( ET.fromstring(str(value)) )
                 
                 elif isinstance(value, PropertyList):
@@ -661,7 +710,7 @@ class FHIRBase(object):
             
 class Element(FHIRBase):
     """Base definition for all elements in a resource."""
-    _timestamp = 1496867578
+    _timestamp = 1496959064
     _url = 'http://hl7.org/fhir/StructureDefinition/Element'
     
     id = Property(PropertyDefinition('id', 'id', '0', '1'))
@@ -764,8 +813,11 @@ class dateTimeBase(BaseType):
     _regex = None
 
     def __init__(self, value):
+        if value is None or self._checkRegEx(value):
+            self._value = value
         super().__init__(value)
 
+    def _checkRegEx(self, value):
         if self._regex and re.match(self._regex, value):
             # The logic below would ideally be implemented by the subclass in
             # question, but this makes generating the subclasses much easier.
@@ -780,9 +832,10 @@ class dateTimeBase(BaseType):
                     args = [value, self.__class__.__name__]
                     raise ValueError('"{}" is not a valid {}'.format(*args))
             
-            self._value = value
+            return True
         elif self._regex is None:
-            self._value = value
+            
+            return True
         else:
             args = [value, self.__class__.__name__]
             raise ValueError('"{}" is not a valid {}'.format(*args))
@@ -791,7 +844,7 @@ class dateTimeBase(BaseType):
         return repr(self._value)
     
     def __str__(self):
-        return self._value
+        return str(self._value)
 # class dateTimeBase 
 
 
@@ -825,7 +878,6 @@ from .bundle import Bundle
 from .codeableconcept import CodeableConcept
 from .coding import Coding
 from .composition import Composition
-from .contactdetail import ContactDetail
 from .contactpoint import ContactPoint
 from .domainresource import DomainResource
 from .humanname import HumanName
@@ -842,6 +894,5 @@ from .range import Range
 from .ratio import Ratio
 from .sampleddata import SampledData
 from .signature import Signature
-from .usagecontext import UsageContext
 
 # __all__ = []

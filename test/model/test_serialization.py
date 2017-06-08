@@ -10,74 +10,7 @@ import json
 
 import fhir.model
 from fhir.model import Extension, dateTime, CodeableConcept, Coding
-
-complex_patient_xml = """
-<Patient xmlns="http://hl7.org/fhir">
-    <id value="patient1"/>
-    <identifier>
-        <system value="urn:oid:1.2.36.146.595.217.0.1"/>
-        <value value="123456789"/>
-    </identifier>
-    <active value="true"/>
-    <name>
-        <use value="official"/>
-        <family value="Sieswerda"/>
-        <given value="Melle"/>
-        <given value="Sjoerd"/>
-    </name>
-    <gender value="male"/> 
-    <birthDate value="1980-06-09">
-        <extension url="http://hl7.org/fhir/StructureDefinition/patient-birthTime">
-            <valueDateTime value="1974-12-25T14:35:45-05:00"/> 
-        </extension> 
-    </birthDate>
-    <deceasedBoolean value="false"/>
-</Patient>
-"""
-
-# This structure is based on DSTU2
-complex_patient_json_dict = json.loads("""
-{
-    "resourceType": "Patient",
-    "id": "patient1",
-    "identifier": [
-        {
-            "system": "urn:oid:1.2.36.146.595.217.0.1",
-            "value": "123456789"
-        }
-    ],
-    "active": true,
-    "name": [
-        {
-            "use": "official",
-            "family": ["Sieswerda"],
-            "given": [
-                "Melle",
-                "Sjoerd"
-            ]
-        }
-    ],
-    "gender": "male",
-    "birthDate": "1980-06-09",
-    "_birthDate": {
-        "extension": [
-            {
-                "url": "http://hl7.org/fhir/StructureDefinition/patient-birthTime",
-                "valueDateTime": "1974-12-25T14:35:45-05:00"
-            }
-        ]
-    },
-    "deceasedBoolean": false
-}
-""")
-
-if fhir.model.VERSION == fhir.model.FHIR_STU3:
-    # STU3 changes the cardinality of 'name' to [0..1]
-    complex_patient_json_dict['name'][0]['family'] = 'Sieswerda'
-    
-complex_patient_json = json.dumps(complex_patient_json_dict)
-
-
+from fhir.model import VERSION_STR
 
 class TestSerialization(unittest.TestCase):
     
@@ -115,11 +48,13 @@ class TestSerialization(unittest.TestCase):
         p.birthDate.extension = [extension]
         
         p.deceased = fhir.model.boolean(False)
+        p.deceased.id = 'deceasedBoolean.id'
         return p
     
     def test_toXML(self):
+        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['complex_patient']
         p = self.getComplexPatient()
-        x1 = ET.fromstring(complex_patient_xml)
+        x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(p.toXML())
 
         try:
@@ -129,13 +64,14 @@ class TestSerialization(unittest.TestCase):
             print('*** ACTUAL ***')
             print(p.toXML())
             print('*** EXPECTED ***', end='')
-            print(complex_patient_xml)
+            print(xmlstring)
             raise
 
     def test_toJSON(self):
+        jsonstring = fhir.serialized_examples_json[VERSION_STR]['complex_patient']
         p = self.getComplexPatient()
         
-        a, b = json.loads(complex_patient_json), json.loads(p.toJSON())
+        a, b = json.loads(jsonstring), json.loads(p.toJSON())
         a, b = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
 
         try:
@@ -149,14 +85,7 @@ class TestSerialization(unittest.TestCase):
             raise
 
     def test_toJSONAttrWithoutValue(self):
-        jsonstring = """
-        {
-            "resourceType": "Patient",
-            "_id": {
-                "id": "haha"
-            }
-        }
-        """
+        jsonstring = '{"resourceType": "Patient", "_id": {"id": "haha"}}'
         p = fhir.model.Patient()
         p.id = None
         p.id.id = "haha"
@@ -175,8 +104,9 @@ class TestSerialization(unittest.TestCase):
             raise
 
     def test_fromXMLPatient(self):
-        p = fhir.model.Patient.fromXML(complex_patient_xml)
-        x1 = ET.fromstring(complex_patient_xml)
+        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['complex_patient']
+        p = fhir.model.Patient.fromXML(xmlstring)
+        x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(p.toXML())
 
         try:
@@ -190,17 +120,7 @@ class TestSerialization(unittest.TestCase):
             raise
 
     def test_fromXMLNarrative(self):
-        xmlstring = """
-        <Patient xmlns="http://hl7.org/fhir">
-            <id value="patient1"/>
-        	<text>
-        		<status value="generated"/>
-        		<div xmlns="http://www.w3.org/1999/xhtml">
-        			<h1>Melle Sjoerd Sieswerda</h1>
-        		</div>
-        	</text>
-        </Patient>
-        """
+        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['patient_with_narrative']
         p = fhir.model.Patient.fromXML(xmlstring)
         x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(p.toXML())
@@ -216,26 +136,7 @@ class TestSerialization(unittest.TestCase):
             raise
     
     def test_fromXMLBundle(self):
-        xmlstring = """
-        <Bundle xmlns="http://hl7.org/fhir">
-            <id value="urn:uuid:749946d1-e6c0-4711-804b-216d6da35b85"/>
-            <type value="searchset"/>
-            <entry>
-                <fullUrl value="http://spark.furore.com/fhir/Patient/spark47/_history/spark182"/>
-                <resource>
-                    <Patient>
-                        <id value="spark47"/>
-                        <name>
-                            <use value="official"/>
-                            <family value="Sieswerda"/>
-                            <given value="Melle"/>
-                            <given value="Sjoerd"/>
-                        </name>
-                    </Patient>
-                </resource>
-            </entry>
-        </Bundle>
-        """
+        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['bundle_with_patient']
         b = fhir.model.Bundle.fromXML(xmlstring)
         x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(b.toXML())
@@ -255,60 +156,7 @@ class TestSerialization(unittest.TestCase):
             raise
 
     def test_fromJSON(self):
-        if fhir.model.VERSION == fhir.model.FHIR_DSTU2:
-            jsonstring = """
-            {
-                "resourceType": "Patient",
-                "id": "patient1",
-                "_id": {
-                    "id": "id.id"
-                },
-                "identifier": [
-                    {
-                        "system": "urn:oid:1.2.36.146.595.217.0.1",
-                        "value": "123456789"
-                    }
-                ],
-                "active": true,
-                "name": [
-                    {
-                        "use": "official",
-                        "family": ["Sieswerda"],
-                        "given": [
-                            "Melle",
-                            "Sjoerd"
-                        ]
-                    }
-                ]
-            }
-            """
-        elif fhir.model.VERSION == fhir.model.FHIR_STU3:
-            jsonstring = """
-            {
-                "resourceType": "Patient",
-                "id": "patient1",
-                "_id": {
-                    "id": "id.id"
-                },
-                "identifier": [
-                    {
-                        "system": "urn:oid:1.2.36.146.595.217.0.1",
-                        "value": "123456789"
-                    }
-                ],
-                "active": true,
-                "name": [
-                    {
-                        "use": "official",
-                        "family": "Sieswerda",
-                        "given": [
-                            "Melle",
-                            "Sjoerd"
-                        ]
-                    }
-                ]
-            }
-            """            
+        jsonstring = fhir.serialized_examples_json[VERSION_STR]['complex_patient']
         p = fhir.model.Patient.fromJSON(jsonstring)                
 
         a, b = json.loads(jsonstring), json.loads(p.toJSON())
@@ -324,4 +172,22 @@ class TestSerialization(unittest.TestCase):
             print(jsonstring)
             raise
 
+    def test_fromJSONBundle(self):
+        jsonstring = fhir.serialized_examples_json[VERSION_STR]['bundle_with_patient']
+        bundle = fhir.model.Bundle.fromJSON(jsonstring)
+        
+        self.assertTrue(bundle.entry[0].resource.name[0].given[0] == "Melle")
 
+        a, b = json.loads(jsonstring), json.loads(bundle.toJSON())
+        a, b = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
+
+        try:
+            self.assertEquals(a, b)
+        except:
+            print('')
+            print('*** ACTUAL ***')
+            print(bundle.toJSON())
+            print('*** EXPECTED ***', end='')
+            print(jsonstring)
+            raise
+        

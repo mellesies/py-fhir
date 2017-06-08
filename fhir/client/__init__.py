@@ -3,6 +3,7 @@ from __future__ import print_function
 import urllib.request
 import urllib.parse
 
+import fhir.model
 
 class Client(object):
     
@@ -15,7 +16,12 @@ class Client(object):
         print(url)
         
         with urllib.request.urlopen(url) as response:
-           xml = response.read()
-          
-        return xml.decode('utf-8')
+           xml = response.read().decode('utf-8')
+        
+        if id_:
+            class_ = fhir.model.get_type(resource_type)
+        else:
+            class_ = fhir.model.Resource
+         
+        return class_.fromXML(xml)
         

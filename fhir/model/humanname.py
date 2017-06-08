@@ -33,7 +33,7 @@ class HumanName(Element):
     
     use = Property(PropertyDefinition('use', code, '0', '1'))
     text = Property(PropertyDefinition('text', string, '0', '1'))
-    family = Property(PropertyDefinition('family', string, '0', '1'))
+    family = Property(PropertyDefinition('family', string, '0', '*'))
     given = Property(PropertyDefinition('given', string, '0', '*'))
     prefix = Property(PropertyDefinition('prefix', string, '0', '*'))
     suffix = Property(PropertyDefinition('suffix', string, '0', '*'))
