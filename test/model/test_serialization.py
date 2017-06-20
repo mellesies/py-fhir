@@ -87,7 +87,7 @@ class TestSerialization(unittest.TestCase):
     def test_toJSONAttrWithoutValue(self):
         jsonstring = '{"resourceType": "Patient", "_id": {"id": "haha"}}'
         p = fhir.model.Patient()
-        p.id = None
+        p.id = fhir.model.id()
         p.id.id = "haha"
 
         a, b = json.loads(jsonstring), json.loads(p.toJSON())

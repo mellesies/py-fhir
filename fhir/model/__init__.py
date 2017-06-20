@@ -82,6 +82,8 @@ FHIR_DSTU2 = packaging.version.parse('1.0.2')
 VERSION = packaging.version.parse('1.0.2')
 VERSION_STR = '1.0.2'
 
+SUPPORTED_FORMATS = ['xml', 'json']
+
 inf = float('inf')
 
 PRIMITIVE_TYPES = OrderedDict([
@@ -153,6 +155,13 @@ class InvalidAttributeError(Exception):
     def __init__(self, resource_or_element, attr):
         msg = "The attribute '{}' is not a valid property for '{}'.".format(attr, resource_or_element)
         super(InvalidAttributeError, self).__init__(msg)
+# class InvalidAttributeError
+
+class UnsupportedFormatError(Exception):
+    def __init__(self, format_):
+        message = "The format '{}' is not (yet) supported!".format(format_)
+        super(UnsupportedFormatError, self).__init__(message)
+# class UnsupportedFormatError
 
 # ------------------------------------------------------------------------------
 # Property classes to declaratively define FHIR model.
@@ -190,6 +199,39 @@ class PropertyMixin(object):
         Provides methods to coerce (~cast) native types (str, int) to FHIR types 
         (string, decimal). Used by Property and PropertyList.
     """
+    def coerce_type(self, value):
+        """Coerce (~cast) value to correspond to PropertyDefinition."""
+        logger = logging.getLogger('PropertyMixin')
+        type_ = self.definition.type
+        
+        # if value is None and not issubclass(type_, BaseType):
+        #     return None
+        if value is None:
+            return None
+        
+        # PropertyDefinition.type might defined as string --> lazily evaluate.
+        # FIXME: this will probably fail for references!
+        if isinstance(type_, str):
+            type_ = get_type(type_)
+
+        # Check for multi typed properties first. isinstance will complain if
+        # it receives a list of strings as 2nd argument.
+        if isinstance(type_, list):
+            return self.coerce_multi_type(value, type_)
+        
+        # If value already has the correct type, we don't need to do anything.
+        if isinstance(value, FHIRBase) and isinstance(value, type_):
+            return value
+
+        # If we're still here, try to coerce/cast.
+        # This has a side effect: any current value will be replaced by a new instance!
+        try:
+            # print('casting value {} to {}'.format(value, type_))
+            return type_(value)
+        except Exception as e:
+            raise PropertyTypeError(value.__class__.__name__, self.definition)
+    # def coerce_type    
+    
     def coerce_multi_type(self, value, types):
         """
             Coerce 'value' to a type in 'types'.
@@ -222,36 +264,6 @@ class PropertyMixin(object):
         # FIXME: change to more meaningful exception!
         raise Exception("Could not find a proper type for value '{}' in {}".format(value, self.definition.type))
     # def coerce_multi_type
-    
-    def coerce_type(self, value):
-        """Coerce (~cast) value to correspond to PropertyDefinition."""
-        logger = logging.getLogger('PropertyMixin')
-        type_ = self.definition.type
-        
-        if value is None and not issubclass(type_, Element):
-            return None
-
-        # PropertyDefinition.type might defined as string --> lazily evaluate.
-        # FIXME: this will probably fail for references!
-        if isinstance(type_, str):
-            type_ = get_type(type_)
-
-        # Check for multi typed properties first. isinstance will complain if
-        # it receives a list of strings as 2nd argument.
-        if isinstance(type_, list):
-            return self.coerce_multi_type(value, type_)
-        
-        # If value already has the correct type, we don't need to do anything.
-        if isinstance(value, FHIRBase) and isinstance(value, type_):
-            return value
-
-        # If we're still here, try to coerce/cast.
-        # This has a side effect: any current value will be replaced by a new instance!
-        try:
-            # print('casting value {} to {}'.format(value, type_))
-            return type_(value)
-        except Exception as e:
-            raise PropertyTypeError(value.__class__.__name__, self.definition)
 # class PropertyMixin
         
 class Property(PropertyMixin):
@@ -443,6 +455,20 @@ class FHIRBase(object):
     # def _getPropertyDetailsForName
     
     @classmethod
+    def getType(cls):
+        return cls.__name__
+    
+    @classmethod
+    def loads(self, string, format_='xml'):
+        if format_ in SUPPORTED_FORMATS:
+            format_ = format_.upper()
+            func = getattr(self, 'from' + format_)
+            return func(string)
+        
+        raise UnsupportedFormatError(format_)
+    # def loads
+    
+    @classmethod
     def fromXML(cls, xmlstring):
         """Marshall a Resource from its XML representation."""
         log = logging.getLogger(cls.__name__)
@@ -592,15 +618,62 @@ class FHIRBase(object):
         return self
     # def _fromDict
 
-
-
     def dumps(self, format_='xml'):
-        if format_ in ['xml', 'json']:
+        if format_ in SUPPORTED_FORMATS:
             format_ = format_.upper()
             func = getattr(self, 'to' + format_)
             return func()
+        
+        raise UnsupportedFormatError(format_)
     # def dumps
+   
+    def toXML(self, parent, path):
+        """Return an XML representation of this object."""
+        # Iterate over *my* attributes.
+        for attr in self._getProperties():
+            value = getattr(self, attr)
+            desc = getattr(type(self), attr).definition
+            path_str = '.'.join(path + [attr, ])
+            
+            if value is not None:
+                if desc.repr == 'xmlAttr':
+                    parent.set(attr, str(value))
+            
+                # elif issubclass(desc.type, xhtml):
+                elif desc.repr == 'text':
+                    # print(desc.type, type(desc.type))
+                    parent.append( ET.fromstring(str(value)) )
+                
+                elif isinstance(value, PropertyList):
+                    for p in value:
+                        p.toXML(ET.SubElement(parent, attr), path + [attr, ])
+                        
+                elif isinstance(value, FHIRBase):
+                    if isinstance(desc.type, list):
+                        class_name = upper_first_letter(value.__class__.__name__)
+                        attr = attr + class_name
+                    value.toXML(ET.SubElement(parent, attr), path + [attr, ])
+                
+                else:
+                    print(value, type(value))
+                    raise Exception('unknown property type!?')
+        
+        # Only the root element needs to generate the actual XML.
+        if len(path) == 1:
+            x = xml.dom.minidom.parseString(ET.tostring(parent)) 
+            pretty_xml = x.toprettyxml(indent='  ')
 
+            if isinstance(self, Element):
+                pretty_xml = pretty_xml.replace('<?xml version="1.0" ?>\n', '')
+                
+            return pretty_xml
+    # def toXML
+    
+    def toJSON(self):
+        """Return a JSON representation of this object."""
+        return json.dumps(self.toDict(), indent=4)
+    # def toJSON
+    
     def toNative(self):
         return self.toDict()
     # def toNative
@@ -659,58 +732,11 @@ class FHIRBase(object):
             
         return retval
     # def toDict
-    
-    def toJSON(self):
-        """Return a JSON representation of this object."""
-        return json.dumps(self.toDict(), indent=4)
-    # def toJSON
-    
-    def toXML(self, parent, path):
-        """Return an XML representation of this object."""
-        # Iterate over *my* attributes.
-        for attr in self._getProperties():
-            value = getattr(self, attr)
-            desc = getattr(type(self), attr).definition
-            path_str = '.'.join(path + [attr, ])
-            
-            if value is not None:
-                if desc.repr == 'xmlAttr':
-                    parent.set(attr, str(value))
-            
-                # elif issubclass(desc.type, xhtml):
-                elif desc.repr == 'text':
-                    # print(desc.type, type(desc.type))
-                    parent.append( ET.fromstring(str(value)) )
-                
-                elif isinstance(value, PropertyList):
-                    for p in value:
-                        p.toXML(ET.SubElement(parent, attr), path + [attr, ])
-                        
-                elif isinstance(value, FHIRBase):
-                    if isinstance(desc.type, list):
-                        class_name = upper_first_letter(value.__class__.__name__)
-                        attr = attr + class_name 
-                    value.toXML(ET.SubElement(parent, attr), path + [attr, ])
-                
-                else:
-                    print(value, type(value))
-                    raise Exception('unknown property type!?')
-        
-        # Only the root element needs to generate the actual XML.
-        if len(path) == 1:
-            x = xml.dom.minidom.parseString(ET.tostring(parent)) 
-            pretty_xml = x.toprettyxml(indent='  ')
-
-            if isinstance(self, Element):
-                pretty_xml = pretty_xml.replace('<?xml version="1.0" ?>\n', '')
-                
-            return pretty_xml
-    # def toXML
 # class FHIRBase 
             
 class Element(FHIRBase):
     """Base definition for all elements in a resource."""
-    _timestamp = 1496959064
+    _timestamp = 1497985453
     _url = 'http://hl7.org/fhir/StructureDefinition/Element'
     
     id = Property(PropertyDefinition('id', 'id', '0', '1'))

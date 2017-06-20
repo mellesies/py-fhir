@@ -130,18 +130,22 @@ def find_tests(path='./'):
 
 def run_tests(suites, config):
   log = logging.getLogger('TEST')
-  print('-' * 80)
+  print('-' * 90)
   print('Testing: ' + config['app_name'])
   print('Started: ' + datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
-  print('-' * 80)
+  print('-' * 90)
+  
+  # Setting verbosity=1 will display dots instead.
   result = TestRunner(log, verbosity=2).run(suites)
   log.info(result)
   print()
 
-
-if __name__ == '__main__':
+def run():
   config = util.init('unittest')
 
   suites = find_tests()
   run_tests(suites, config)
 
+if __name__ == '__main__':
+    run()
+    
