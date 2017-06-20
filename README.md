@@ -40,7 +40,7 @@ name.family = ['Sieswerda']
 p.name = [name]
 
 # Serialize to JSON and print the result. To serialize to XML use 'p.toXML()'.
-print(p.toJSON())
+print(p.dumps('json'))
 ```
 
 This should yield the following output:
@@ -80,11 +80,46 @@ This should yield the following output:
 
 It is also possible to marshall an object from JSON (or XML) representation:
 ```python
-jsonstring = p.toJSON()
-p2 = Patient.marshallJSON(jsonstring)
+jsonstring = p.dumps('json')
+p2 = Patient.loads(jsonstring, 'json')
 p2.id == p.id
 # output: True
 ```
+
+## Using the client
+```python
+import fhir.model
+import fhir.client
+from fhir.model import Patient, HumanName
+
+URL = fhir.client.SERVERS['spark']
+client = fhir.client.Client(URL)
+client.set_properties(fhir.model.Resource)
+
+# The following is equivalent to 
+# bundle = client.query('Patient')
+bundle = fhir.model.Patient.query()
+
+# Print the first result we received
+for p in bundle:
+    print(p.dumps('json'))
+    break
+	
+# Create a new patient on the server
+p = Patient()
+p.active = True
+
+name = HumanName(
+	use='official', 
+	given=['Melle'], 
+	family=['Testpatient']
+)
+p.name = [name]
+
+p.save()
+print('The server assigned id "{}"'.format(p.id))
+```
+
 
 ## Using persistant storage
 > Cave: the current implementation should be considered a stub. 
