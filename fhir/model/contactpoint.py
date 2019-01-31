@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -33,8 +33,8 @@ class ContactPoint(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/ContactPoint'
     
-    system = Property(PropertyDefinition('system', code, '0', '1'))
-    value = Property(PropertyDefinition('value', string, '0', '1'))
-    use = Property(PropertyDefinition('use', code, '0', '1'))
-    rank = Property(PropertyDefinition('rank', positiveInt, '0', '1'))
-    period = Property(PropertyDefinition('period', Period, '0', '1'))
+    system = Property('system', code, '0', '1')
+    value = Property('value', string, '0', '1')
+    use = Property('use', code, '0', '1')
+    rank = Property('rank', positiveInt, '0', '1')
+    period = Property('period', Period, '0', '1')

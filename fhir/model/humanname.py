@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -31,10 +31,10 @@ class HumanName(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/HumanName'
     
-    use = Property(PropertyDefinition('use', code, '0', '1'))
-    text = Property(PropertyDefinition('text', string, '0', '1'))
-    family = Property(PropertyDefinition('family', string, '0', '*'))
-    given = Property(PropertyDefinition('given', string, '0', '*'))
-    prefix = Property(PropertyDefinition('prefix', string, '0', '*'))
-    suffix = Property(PropertyDefinition('suffix', string, '0', '*'))
-    period = Property(PropertyDefinition('period', Period, '0', '1'))
+    use = Property('use', code, '0', '1')
+    text = Property('text', string, '0', '1')
+    family = Property('family', string, '0', '1')
+    given = Property('given', string, '0', '*')
+    prefix = Property('prefix', string, '0', '*')
+    suffix = Property('suffix', string, '0', '*')
+    period = Property('period', Period, '0', '1')

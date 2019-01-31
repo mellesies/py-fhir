@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -33,10 +33,10 @@ class SampledData(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/SampledData'
     
-    origin = Property(PropertyDefinition('origin', Quantity, '1', '1'))
-    period = Property(PropertyDefinition('period', decimal, '1', '1'))
-    factor = Property(PropertyDefinition('factor', decimal, '0', '1'))
-    lowerLimit = Property(PropertyDefinition('lowerLimit', decimal, '0', '1'))
-    upperLimit = Property(PropertyDefinition('upperLimit', decimal, '0', '1'))
-    dimensions = Property(PropertyDefinition('dimensions', positiveInt, '1', '1'))
-    data = Property(PropertyDefinition('data', string, '1', '1'))
+    origin = Property('origin', Quantity, '1', '1')
+    period = Property('period', decimal, '1', '1')
+    factor = Property('factor', decimal, '0', '1')
+    lowerLimit = Property('lowerLimit', decimal, '0', '1')
+    upperLimit = Property('upperLimit', decimal, '0', '1')
+    dimensions = Property('dimensions', positiveInt, '1', '1')
+    data = Property('data', string, '0', '1')

@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+import os, os.path
 import unittest
 import logging
 import pprint
 
 import xml.etree.ElementTree as ET
+
 from formencode.doctest_xml_compare import xml_compare
+import xmldiff
+import jsondiff
+
 import json
 
-import fhir.model
+import fhir
 from fhir.model import Extension, dateTime, CodeableConcept, Coding
 from fhir.model import VERSION_STR
 
@@ -24,13 +28,15 @@ class TestSerialization(unittest.TestCase):
         )
         p.identifier = [identifier]
 
-        if fhir.model.VERSION == fhir.model.FHIR_DSTU2:
+        VERSION = fhir.model.VERSION
+
+        if VERSION <= fhir.model.FHIR_DSTU2:
             name = fhir.model.HumanName(
                 use='official', 
                 given=['Melle', 'Sjoerd'], 
                 family=['Sieswerda']
             )
-        elif fhir.model.VERSION == fhir.model.FHIR_STU3:
+        elif fhir.model.FHIR_DSTU2 < VERSION <= fhir.model.FHIR_R4:
             name = fhir.model.HumanName(
                 use='official', 
                 given=['Melle', 'Sjoerd'], 
@@ -51,39 +57,6 @@ class TestSerialization(unittest.TestCase):
         p.deceased.id = 'deceasedBoolean.id'
         return p
     
-    def test_toXML(self):
-        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['complex_patient']
-        p = self.getComplexPatient()
-        x1 = ET.fromstring(xmlstring)
-        x2 = ET.fromstring(p.toXML())
-
-        try:
-            self.assertTrue(xml_compare(x1, x2))
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(p.toXML())
-            print('*** EXPECTED ***', end='')
-            print(xmlstring)
-            raise
-
-    def test_toJSON(self):
-        jsonstring = fhir.serialized_examples_json[VERSION_STR]['complex_patient']
-        p = self.getComplexPatient()
-        
-        a, b = json.loads(jsonstring), json.loads(p.toJSON())
-        a, b = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
-
-        try:
-            self.assertEquals(a, b)
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(p.toJSON())
-            print('*** EXPECTED ***', end='')
-            print(jsonstring)
-            raise
-
     def test_toJSONAttrWithoutValue(self):
         jsonstring = '{"resourceType": "Patient", "_id": {"id": "haha"}}'
         p = fhir.model.Patient()
@@ -103,91 +76,51 @@ class TestSerialization(unittest.TestCase):
             print(jsonstring)
             raise
 
-    def test_fromXMLPatient(self):
-        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['complex_patient']
+    def test_referenceAllowedProfiles(self):
+        xmlstring = fhir.get_example_data('patient-example', 'xml')
         p = fhir.model.Patient.fromXML(xmlstring)
-        x1 = ET.fromstring(xmlstring)
-        x2 = ET.fromstring(p.toXML())
+        
+        # _allowed_profiles
 
-        try:
-            self.assertTrue(xml_compare(x1, x2))
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(p.toXML())
-            print('*** EXPECTED ***', end='')
-            print(xmlstring)
-            raise
-
-    def test_fromXMLNarrative(self):
-        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['patient_with_narrative']
+    def test_examplePatientFromXML(self):
+        """Test loading and serializing a patient from/to XML."""
+        xmlstring = fhir.get_example_data('patient-example', 'xml')
         p = fhir.model.Patient.fromXML(xmlstring)
-        x1 = ET.fromstring(xmlstring)
-        x2 = ET.fromstring(p.toXML())
 
-        try:
-            self.assertTrue(xml_compare(x1, x2))
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(p.toXML())
-            print('*** EXPECTED ***', end='')
-            print(xmlstring)
-            raise
-    
-    def test_fromXMLBundle(self):
-        xmlstring = fhir.serialized_examples_xml[VERSION_STR]['bundle_with_patient']
+        # Cannot do a direct compare due to the fact namespaces can
+        # be rendered in different ways.
+        self.assertEquals(p.id, 'example')
+        self.assertEquals(p.identifier[0].use, 'usual')
+        self.assertEquals(p.identifier[0].value, '12345')
+        self.assertEquals(p.active, True)
+
+    def test_examplePatientFromJSON(self):
+        """Test loading and serializing a patient from/to JSON."""
+        jsonstring = fhir.get_example_data('patient-example', 'json')
+
+        p = fhir.model.Patient.fromJSON(jsonstring)
+        diff = jsondiff.diff(jsonstring, p.toJSON(), load=True)
+        self.assertEquals(diff, {})
+
+    def test_exampleBundleFromXML(self):
+        xmlstring = fhir.get_example_data('bundle-example', 'xml')
         b = fhir.model.Bundle.fromXML(xmlstring)
-        x1 = ET.fromstring(xmlstring)
-        x2 = ET.fromstring(b.toXML())
         
-        p = b.entry[0].resource
-        self.assertTrue(isinstance(p, fhir.model.Patient))
-        self.assertEquals(p.name[0].given[0], 'Melle')
+        # Cannot do a direct compare due to the fact namespaces can
+        # be rendered in different ways.
+        self.assertEquals(b.id, 'bundle-example')
+        self.assertEquals(b.total, 3)
+        self.assertTrue(len(b.entry), 2)
+        self.assertTrue(isinstance(b.entry[0].resource, fhir.model.MedicationRequest))
+        self.assertTrue(isinstance(b.entry[1].resource, fhir.model.Medication))
+
+    def test_exampleBundleFromJSON(self):
+        """Test loading and serializing a patient from/to JSON."""
+        jsonstring = fhir.get_example_data('bundle-example', 'json')
+        b = fhir.model.Bundle.fromJSON(jsonstring)
         
-        try:
-            self.assertTrue(xml_compare(x1, x2))
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(b.toXML())
-            print('*** EXPECTED ***', end='')
-            print(xmlstring)
-            raise
+        diff = jsondiff.diff(jsonstring, b.toJSON(), load=True)
+        self.assertEquals(diff, {})
 
-    def test_fromJSON(self):
-        jsonstring = fhir.serialized_examples_json[VERSION_STR]['complex_patient']
-        p = fhir.model.Patient.fromJSON(jsonstring)                
 
-        a, b = json.loads(jsonstring), json.loads(p.toJSON())
-        a, b = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
-
-        try:
-            self.assertEquals(a, b)
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(p.toJSON())
-            print('*** EXPECTED ***', end='')
-            print(jsonstring)
-            raise
-
-    def test_fromJSONBundle(self):
-        jsonstring = fhir.serialized_examples_json[VERSION_STR]['bundle_with_patient']
-        bundle = fhir.model.Bundle.fromJSON(jsonstring)
-        
-        self.assertTrue(bundle.entry[0].resource.name[0].given[0] == "Melle")
-
-        a, b = json.loads(jsonstring), json.loads(bundle.toJSON())
-        a, b = json.dumps(a, sort_keys=True), json.dumps(b, sort_keys=True)
-
-        try:
-            self.assertEquals(a, b)
-        except:
-            print('')
-            print('*** ACTUAL ***')
-            print(bundle.toJSON())
-            print('*** EXPECTED ***', end='')
-            print(jsonstring)
-            raise
         

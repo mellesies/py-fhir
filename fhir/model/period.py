@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -29,5 +29,5 @@ class Period(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Period'
     
-    start = Property(PropertyDefinition('start', dateTime, '0', '1'))
-    end = Property(PropertyDefinition('end', dateTime, '0', '1'))
+    start = Property('start', dateTime, '0', '1')
+    end = Property('end', dateTime, '0', '1')

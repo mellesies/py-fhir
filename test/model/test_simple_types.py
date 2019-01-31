@@ -55,7 +55,6 @@ class TestSimpleTypes(unittest.TestCase):
         self.assertEquals(3*i, 3*t)
         self.assertEquals(i*3, 3*t)
 
-
     def test_boolean(self):
         # Using native Python values
         t = fhir.model.boolean(True)
@@ -77,15 +76,14 @@ class TestSimpleTypes(unittest.TestCase):
         self.assertEquals(t, True)
         self.assertEquals(f, False)
 
-
     def test_dateTime(self):
         datetime_as_string = '2016-12-01T00:00:00Z'
         dt = fhir.model.dateTime(datetime_as_string)
         self.assertEquals(str(dt), datetime_as_string)
+
         self.assertRaises(ValueError, fhir.model.dateTime, '2016-12-01T00:00:01')
         self.assertRaises(ValueError, fhir.model.dateTime, '2016-12-01T00:01:00')
-        self.assertRaises(ValueError, fhir.model.dateTime, '2016-12-01T01:00:00')
-        
+        self.assertRaises(ValueError, fhir.model.dateTime, '2016-12-01T01:00:00')      
         
     def test_date(self):
         date_as_string = '2016-12-01'
@@ -95,4 +93,10 @@ class TestSimpleTypes(unittest.TestCase):
     def test_time(self):
         dt = fhir.model.time('00:00:00')
         self.assertEquals(str(dt), '00:00:00')
-        
+
+        # This should raise an error, but is currently not implemented.
+        # with self.assertRaises(ValueError):
+        #     fhir.model.time('00:00:00+01:00')
+        #
+        # with self.assertRaises(ValueError):
+        #     fhir.model.time('00:00:00Z')

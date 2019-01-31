@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -35,8 +35,8 @@ class Quantity(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Quantity'
     
-    value = Property(PropertyDefinition('value', decimal, '0', '1'))
-    comparator = Property(PropertyDefinition('comparator', code, '0', '1'))
-    unit = Property(PropertyDefinition('unit', string, '0', '1'))
-    system = Property(PropertyDefinition('system', uri, '0', '1'))
-    code = Property(PropertyDefinition('code', code, '0', '1'))
+    value = Property('value', decimal, '0', '1')
+    comparator = Property('comparator', code, '0', '1')
+    unit = Property('unit', string, '0', '1')
+    system = Property('system', uri, '0', '1')
+    code = Property('code', code, '0', '1')

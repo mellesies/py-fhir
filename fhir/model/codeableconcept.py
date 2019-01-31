@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -31,5 +31,5 @@ class CodeableConcept(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/CodeableConcept'
     
-    coding = Property(PropertyDefinition('coding', Coding, '0', '*'))
-    text = Property(PropertyDefinition('text', string, '0', '1'))
+    coding = Property('coding', Coding, '0', '*')
+    text = Property('text', string, '0', '1')

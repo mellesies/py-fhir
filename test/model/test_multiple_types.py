@@ -15,13 +15,12 @@ from fhir.model.domainresource import DomainResource
 
 class Multiple(DomainResource):
     _url = 'urn:test'
-    multi = Property(PropertyDefinition('multi', ['boolean', 'dateTime'], '0', '1'))
+    multi = Property('multi', ['boolean', 'dateTime'], '0', '1')
 
 
 class TestMultiple(unittest.TestCase):
     
     def test_multipleBoolean(self):
-        
         xmlstring = """
         <Multiple xmlns="http://hl7.org/fhir">
             <multiBoolean value="true"/>
@@ -33,10 +32,10 @@ class TestMultiple(unittest.TestCase):
         x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(m.toXML())
 
-        self.assertTrue(xml_compare(x1, x2), 'Serialized DomainReource does not match expected XML representation!')
+        msg = 'Serialized Resource does not match expected XML representation!'
+        self.assertTrue(xml_compare(x1, x2), msg)
 
     def test_multipleDateTime(self):
-        
         xmlstring = """
         <Multiple xmlns="http://hl7.org/fhir">
             <multiDateTime value="2080-01-01T00:00:00Z"/>
@@ -49,7 +48,8 @@ class TestMultiple(unittest.TestCase):
         x1 = ET.fromstring(xmlstring)
         x2 = ET.fromstring(m.toXML())
 
-        self.assertTrue(xml_compare(x1, x2), 'Serialized DomainReource does not match expected XML representation!')
+        msg = 'Serialized Resource does not match expected XML representation!'
+        self.assertTrue(xml_compare(x1, x2), msg)
 
     def test_assignmentError(self):
         m = Multiple()

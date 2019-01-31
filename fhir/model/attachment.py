@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -12,7 +12,7 @@ from ._code import code
 from ._datetime import dateTime
 from ._string import string
 from ._unsignedint import unsignedInt
-from ._uri import uri
+from ._url import url
 
 
 __author__ = "Melle Sieswerda"
@@ -34,11 +34,11 @@ class Attachment(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Attachment'
     
-    contentType = Property(PropertyDefinition('contentType', code, '0', '1'))
-    language = Property(PropertyDefinition('language', code, '0', '1'))
-    data = Property(PropertyDefinition('data', base64Binary, '0', '1'))
-    url = Property(PropertyDefinition('url', uri, '0', '1'))
-    size = Property(PropertyDefinition('size', unsignedInt, '0', '1'))
-    hash = Property(PropertyDefinition('hash', base64Binary, '0', '1'))
-    title = Property(PropertyDefinition('title', string, '0', '1'))
-    creation = Property(PropertyDefinition('creation', dateTime, '0', '1'))
+    contentType = Property('contentType', code, '0', '1')
+    language = Property('language', code, '0', '1')
+    data = Property('data', base64Binary, '0', '1')
+    url = Property('url', url, '0', '1')
+    size = Property('size', unsignedInt, '0', '1')
+    hash = Property('hash', base64Binary, '0', '1')
+    title = Property('title', string, '0', '1')
+    creation = Property('creation', dateTime, '0', '1')

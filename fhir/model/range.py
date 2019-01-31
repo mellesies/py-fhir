@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -29,5 +29,5 @@ class Range(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Range'
     
-    low = Property(PropertyDefinition('low', Quantity, '0', '1'))
-    high = Property(PropertyDefinition('high', Quantity, '0', '1'))
+    low = Property('low', Quantity, '0', '1')
+    high = Property('high', Quantity, '0', '1')

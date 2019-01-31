@@ -13,6 +13,18 @@ from fhir.model.codeableconcept import CodeableConcept, Coding
 
 class TestResource(unittest.TestCase):
     
+    def test_patient(self):
+        p = fhir.model.Patient()
+        name = fhir.model.HumanName(
+            given=['Melle', 'Sjoerd'],
+            family='Sieswerda'
+        )
+
+        try: 
+            p.name = [name]
+        except:
+            self.fail('Assigning name to patient raised an unexpected error')
+
 
     def test_assignmentError(self):
         p = fhir.model.Patient()

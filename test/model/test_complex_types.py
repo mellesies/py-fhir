@@ -22,9 +22,7 @@ class TestComplexTypes(unittest.TestCase):
             name.family = ['Sieswerda']
         elif fhir.model.VERSION == fhir.model.FHIR_STU3:
             name.family = 'Sieswerda'
-
-        # print(name.toXML())
-        
+    
     def test_extension(self):
         xmlstring = """
         <Extension url="http://example.com/ExtensionThingy">

@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -29,4 +29,4 @@ class BackboneElement(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/BackboneElement'
     
-    modifierExtension = Property(PropertyDefinition('modifierExtension', Extension, '0', '*'))
+    modifierExtension = Property('modifierExtension', Extension, '0', '*')

@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 from .resource import Resource
@@ -31,7 +31,7 @@ class DomainResource(Resource):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/DomainResource'
     
-    text = Property(PropertyDefinition('text', Narrative, '0', '1'))
-    contained = Property(PropertyDefinition('contained', Resource, '0', '*'))
-    extension = Property(PropertyDefinition('extension', Extension, '0', '*'))
-    modifierExtension = Property(PropertyDefinition('modifierExtension', Extension, '0', '*'))
+    text = Property('text', Narrative, '0', '1')
+    contained = Property('contained', Resource, '0', '*')
+    extension = Property('extension', Extension, '0', '*')
+    modifierExtension = Property('modifierExtension', Extension, '0', '*')

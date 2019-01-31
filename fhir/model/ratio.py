@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -30,5 +30,5 @@ class Ratio(Element):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Ratio'
     
-    numerator = Property(PropertyDefinition('numerator', Quantity, '0', '1'))
-    denominator = Property(PropertyDefinition('denominator', Quantity, '0', '1'))
+    numerator = Property('numerator', Quantity, '0', '1')
+    denominator = Property('denominator', Quantity, '0', '1')

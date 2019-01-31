@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, PropertyDefinition
+from . import Property
 from . import FHIRBase, Element, Extension, Reference
 
 
@@ -34,10 +34,10 @@ class Resource(FHIRBase):
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Resource'
     
-    id = Property(PropertyDefinition('id', id, '0', '1'))
-    meta = Property(PropertyDefinition('meta', Meta, '0', '1'))
-    implicitRules = Property(PropertyDefinition('implicitRules', uri, '0', '1'))
-    language = Property(PropertyDefinition('language', code, '0', '1'))
+    id = Property('id', id, '0', '1')
+    meta = Property('meta', Meta, '0', '1')
+    implicitRules = Property('implicitRules', uri, '0', '1')
+    language = Property('language', code, '0', '1')
 
     
     def toXML(self, parent=None, path=None):

@@ -3,7 +3,7 @@ from __future__ import print_function
 import datetime as dt
 import logging
 
-from . import Property, DateTimeProperty, PropertyDefinition, BaseType, dateTimeBase
+from . import Property, DateTimeProperty, BaseType, dateTimeBase
 
 __all__ = ['boolean', ]
 
@@ -19,7 +19,7 @@ class boolean_(int):
 class boolean(BaseType):
     """Adapted from https://www.python.org/dev/peps/pep-0285/"""
     
-    value = Property(PropertyDefinition('value', boolean_, '1', '1', 'xmlAttr'))
+    value = Property('value', boolean_, '1', '1', 'xmlAttr')
     
     def __init__(self, value):
         if value == "true":
