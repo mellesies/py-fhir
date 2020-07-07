@@ -28,7 +28,7 @@ p.identifier = [identifier]
 
 # Native python values are automatically coerced to FHIR classes
 p.active = True
-print(type(p.active)
+print(type(p.active))
 # output: <class 'fhir.model._boolean.boolean'>
 
 name = HumanName()
