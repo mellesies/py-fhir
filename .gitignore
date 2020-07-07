@@ -2,3 +2,5 @@
 .vscode
 logs
 tmp.db
+
+*.egg-info

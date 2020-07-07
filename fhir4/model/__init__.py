@@ -2,6 +2,7 @@
 """FHIR Resources & Elements in Python."""
 import sys
 import inspect
+import copy
 import packaging.version
 from collections import OrderedDict
 from datetime import datetime
@@ -54,6 +55,7 @@ __all__ = [
     'BackboneElement',
     'Bundle',
     'CodeableConcept',
+    'CodeableConcept',
     'Coding',
     'Composition',
     'ContactDetail',
@@ -62,6 +64,8 @@ __all__ = [
     'Dosage',
     'Duration',
     'Element',
+    'Encounter',
+    'EpisodeOfCare',
     'Extension',
     'FHIRBase',
     'HumanName',
@@ -71,6 +75,7 @@ __all__ = [
     'Meta',
     'Narrative',
     'Observation',
+    'OperationOutcome',
     'Patient',
     'Period',
     'Quantity',
@@ -84,6 +89,7 @@ __all__ = [
     'Signature',
     'Timing',
     'UsageContext',
+    'ValueSet',
 ]
 
 # Module global
@@ -135,7 +141,7 @@ def split_namespace(element_or_tag):
         tag = element_or_tag.tag
     else:
         tag = element_or_tag
-    
+
     m = re.match('\{(.*)\}', tag)
     ns_with_accolades = m.group(0) if m else ''
     ns_without_accolades = m.group(1) if m else ''
@@ -157,7 +163,7 @@ def eval_type_string(type_, module=None):
             # This will work for strings that contain a class type
             attr = getattr(sys.modules[__name__], type_)
         except AttributeError:
-            # It could be that the string actually evaluates to an instance, 
+            # It could be that the string actually evaluates to an instance,
             # for example:
             # Reference(["http://hl7.org/fhir/StructureDefinition/Organization"])
             stars(True)
@@ -169,7 +175,7 @@ def eval_type_string(type_, module=None):
         return attr
 
     elif isinstance(type_, list):
-        return [eval(t) if (type(t) == str) else t for t in type_]        
+        return [eval(t) if (type(t) == str) else t for t in type_]
 
     else:
         return type_
@@ -184,7 +190,7 @@ class PropertyCardinalityError(Exception):
             message = "Cannot {} a list as value for property '{}': cardinality [{}..{}]"
         else:
             message = "Cannot {} property '{}': cardinality [{}..{}]"
-            
+
         message = message.format(method, description.name, description.cmin, description.cmax)
         super(PropertyCardinalityError, self).__init__(message)
 # class PropertyCardinalityError
@@ -214,19 +220,19 @@ class PropertyDefinition(object):
     """Definition of an attribute of a Resource or Element."""
     def __init__(self, name, type_, cmin, cmax, repr_='element'):
         assert name.find(' ') < 0, "'name' should not contain spaces."
-        
+
         cmin = int(cmin)
         if cmax == '*':
             cmax = inf
         else:
             cmax = int(cmax)
-        
+
         self.name = name
         self.type = type_
         self.cmin = cmin
         self.cmax = cmax
         self.repr = repr_
-    
+
     def __repr__(self):
         params = {
             'name': self.name,
@@ -240,7 +246,7 @@ class PropertyDefinition(object):
 
 class PropertyMixin(object):
     """
-        Provides methods to coerce (~cast) native types (str, int) to FHIR types 
+        Provides methods to coerce (~cast) native types (str, int) to FHIR types
         (string, decimal). Used by Property and PropertyList.
     """
     def coerce_type(self, value):
@@ -257,7 +263,7 @@ class PropertyMixin(object):
         # - a list
         # - an instance other than a list (e.g. a type with parameters)
         type_ = self.definition.type
-        
+
         # PropertyDefinition.type might defined as string --> lazily evaluate.
         # if isinstance(type_, str):
         #     type_ = eval_type_string(type_)
@@ -301,8 +307,8 @@ class PropertyMixin(object):
             return type_(value)
         except Exception as e:
             raise PropertyTypeError(value.__class__.__name__, self.definition)
-    # def coerce_type    
-    
+    # def coerce_type
+
     def coerce_multi_type(self, value, types):
         """
             Coerce 'value' to a type in 'types'.
@@ -310,7 +316,7 @@ class PropertyMixin(object):
             For properties that support more than one type, first check if the
             provided value actually is of one of these types. If not, try to cast
             to a supported value by simply trying each supported type.
-            
+
             Example of a property that supports more than one type:
                 multi = Property(PropertyDefinition('multi', ['boolean', 'dateTime'], '0', '1'))
         """
@@ -324,9 +330,9 @@ class PropertyMixin(object):
 
             elif type(value) not in types:
                 raise PropertyTypeError(type(value).__name__, self.definition)
-        
+
             return value
-        
+
         # Ok, so value is not (yet) a fhir type. Try to find a supported type.
         for type_ in self.definition.type:
             constructor = getattr(sys.modules[__name__], type_)
@@ -338,45 +344,45 @@ class PropertyMixin(object):
                 pass
             else:
                 return value
-        
+
         # FIXME: change to more meaningful exception!
         raise Exception("Could not find a proper type for value '{}' in {}".format(value, self.definition.type))
     # def coerce_multi_type
 # class PropertyMixin
-        
+
 class Property(PropertyMixin):
     """Property of a Resource or Element.
 
-        This class defines logic to ensure that Resource/Element (and 
+        This class defines logic to ensure that Resource/Element (and
         subclasses) behave much like regular Python objects, while providing
         functionality specific to the FHIR standard.
     """
     _cls_counter = 0
-    
+
     @classmethod
     def __get_creation_counter(cls):
         cls._cls_counter += 1
         return cls._cls_counter
-    
+
     def __init__(self, name, type_, cmin, cmax, repr_='element'):
         """Create new Property instance."""
         self._creation_order = self.__get_creation_counter()
         self.definition = PropertyDefinition(name, type_, cmin, cmax, repr_)
         self.name = name
-    
+
     def __get__(self, instance, owner):
         if instance is None:
             # instance attribute accessed on class, return self
             return self
-        
+
         # instance attribute accessed on instance, return value
         if (self.definition.cmax > 1):
             instance._property_values.setdefault(self.name, PropertyList(self.definition))
-        
+
         return instance._property_values.get(self.name)
-    
+
     def __set__(self, instance, value):
-        if self.definition.cmax > 1: 
+        if self.definition.cmax > 1:
             if isinstance(value, list):
                 # Create the list if necessary
                 instance._property_values.setdefault(self.name, PropertyList(self.definition))
@@ -387,14 +393,14 @@ class Property(PropertyMixin):
                 # Populate the list with the new values
                 for item in value:
                     instance._property_values[self.name].append(item)
-            
+
             else:
                 raise PropertyCardinalityError('set', self.definition)
-        
+
         else:
             if isinstance(value, list):
                 raise PropertyCardinalityError('set', self.definition)
-            
+
             elif isinstance(self.definition.type, Reference):
                 instance._property_values[self.name] = value
 
@@ -405,8 +411,8 @@ class Property(PropertyMixin):
         d = self.definition
         s = f"Property('{d.name}', {d.type}, {d.cmin}, {d.cmax}, '{d.repr}')"
         return s
-    
-    
+
+
     def __lt__(self, other):
         return True
 # class Property
@@ -421,11 +427,11 @@ class DateTimeProperty(Property):
 
 class PropertyList(list, PropertyMixin):
     """PropertyList is used by Property when cardinality > 1."""
-    
+
     def __init__(self, definition, *args, **kwargs):
         """Create a new PropertyList instance.
         Note that minimum cardinality is not enforced when calling 'append'.
-         
+
         :param PropertyDefinition definition: Description of the property.
         """
         super(PropertyList, self).__init__(*args, **kwargs)
@@ -435,25 +441,25 @@ class PropertyList(list, PropertyMixin):
         """Insert a value into the list at position i."""
         # This raises a PropertyTypeError if x has an incorrect value.
         x = self.coerce_type(x)
-        
+
         if len(self) >= self.definition.cmax:
             raise PropertyCardinalityError('insert', self.definition)
-            
+
         super(PropertyList, self).insert(i, x)
-         
+
     def append(self, x):
         """Append a value to the list."""
         # This raises a PropertyTypeError if x has an incorrect value.
         x = self.coerce_type(x)
-        
+
         if len(self) >= self.definition.cmax:
             raise PropertyCardinalityError('append', self.definition)
-            
+
         super(PropertyList, self).append(x)
-    
+
     def toNative(self):
         return [i.toNative() for i in self]
-# class PropertyList   
+# class PropertyList
 
 
 # ------------------------------------------------------------------------------
@@ -467,14 +473,14 @@ class FHIRBase(object):
         """Create a new instance."""
         self.__dict__['_property_values'] = dict()
         self.__dict__['log'] = logging.getLogger(self.__class__.__name__)
-        
+
         self._set(**kwargs)
     # def __init__
-    
+
     def __setattr__(self, attr, value):
         """x.attr = value <==> setattr(x, attr, value)
 
-            Additionally, raises an InvalidAttributeError when trying to assign a 
+            Additionally, raises an InvalidAttributeError when trying to assign a
             value to an attribute that is not part of the Resource/Element definition.
         """
         if (attr not in self._allowed_attributes) \
@@ -489,10 +495,16 @@ class FHIRBase(object):
         for attr, value in kwargs.items():
             setattr(self, attr, value)
 
+    def _repr_html_(self):
+        """Return an HTML representation of this Element/Resource."""
+        return f"""
+            <pre style="font-size:8pt;">{self.dumps('json')}</pre>
+        """
+
     @classmethod
     def _getProperties(cls):
-        """Return a list of attribute names that are of type 'Property'. 
-        
+        """Return a list of attribute names that are of type 'Property'.
+
             The list is sorted by order of definition.
         """
         properties = []
@@ -500,10 +512,10 @@ class FHIRBase(object):
             a = getattr(cls, attr)
             if isinstance(a, Property):
                 properties.append(a)
-                
+
         properties.sort(key=lambda i: i._creation_order)
         properties = [p.definition.name for p in properties]
-        
+
         return properties
     # def _getProperties
 
@@ -511,7 +523,7 @@ class FHIRBase(object):
     def _getPropertyDetailsForName(cls, name):
         """Return Property and (expected) type for attribute with 'name'."""
         name = name.replace('_', '')
-        
+
         if not hasattr(cls, name):
             # We might be dealing with a value[x] property!
             for attr in cls._getProperties():
@@ -523,10 +535,10 @@ class FHIRBase(object):
                         property_ = getattr(cls, attr)
 
                     else:
-                        # FIXME: make sure this works for things like CodeableConcepts too ...
                         # valueBoolean --> boolean
-                        type_ = lower_first_letter(type_)
-                    
+                        if type_ not in __all__:
+                            type_ = lower_first_letter(type_)
+
                     # valueBoolean --> value
                     name = attr
                     break
@@ -536,7 +548,7 @@ class FHIRBase(object):
                 raise Exception(msg.format(name, cls.__name__))
         else:
             type_ = ''
-        
+
         # Get the Property
         property_ = getattr(cls, name)
 
@@ -544,7 +556,7 @@ class FHIRBase(object):
         # definition.
         if not type_:
             type_ = property_.definition.type
-        
+
         # definition.type may be a string to facilitate lazy evaluation.
         try:
             type_ = eval_type_string(type_, inspect.getmodule(cls))
@@ -560,21 +572,21 @@ class FHIRBase(object):
 
         return property_, property_.definition, type_
     # def _getPropertyDetailsForName
-    
+
     @classmethod
     def getType(cls):
         return cls.__name__
-    
+
     @classmethod
     def loads(self, string, format_='xml'):
         if format_ in SUPPORTED_FORMATS:
             format_ = format_.upper()
             func = getattr(self, 'from' + format_)
             return func(string)
-        
+
         raise UnsupportedFormatError(format_)
     # def loads
-    
+
     @classmethod
     def fromXML(cls, xmlstring):
         """Marshall a Resource from its XML representation."""
@@ -582,36 +594,36 @@ class FHIRBase(object):
         # Remove the default namespace definition, makes life a bit easier
         # when using ElementTree.
         xmlstring = re.sub('\\sxmlns="[^"]+"', '', xmlstring, count=1)
-        
+
         # Parse the string using ElementTree
         root = ET.fromstring(xmlstring)
-        
+
         # Sanity check
         if root.tag != cls.__name__:
             # log.warn('*** WARNING: trying to marshall a {} in a {} ***'.format(root.tag, cls.__name__))
             class_ = eval_type_string(root.tag)
-            
+
             if not issubclass(class_, cls):
                 raise Exception('Cannot marshall a {} from a {}: not a subclass!'.format(root.tag, cls.__name__))
-            
+
             return class_()._fromXML(root)
-        
+
         return cls()._fromXML(root)
     # def fromXML_
-    
+
     def _fromXML(self, xml):
         # Iterate over *my* properties.
         for tag in xml:
             ns, tag_name = split_namespace(tag)
             prop, prop_def, prop_type = self._getPropertyDetailsForName(tag_name)
-            
-            # If the namespace is xhtml, we shouldn't parse the tree any 
+
+            # If the namespace is xhtml, we shouldn't parse the tree any
             # further and just try to assign the xhtml to the property.
             if ns == 'http://www.w3.org/1999/xhtml':
                 value = ET.tostring(tag, 'unicode')
                 value = value.replace('html:', '')
                 value = value.replace(':html', '')
-            
+
             # Inline resources are handled a little differently
             elif inspect.isclass(prop_type) and issubclass(prop_type, Resource):
                 children = list(tag)
@@ -619,7 +631,7 @@ class FHIRBase(object):
                 resource_type = eval_type_string(resource_element.tag)
                 value = resource_type()
                 value._fromXML(resource_element)
-            
+
             # Then it must be a simple or complex type
             else:
                 value = prop_type(**tag.attrib)
@@ -637,18 +649,37 @@ class FHIRBase(object):
     def fromJSON(cls, jsonstring):
         """Marshall a Resource from its JSON representation."""
         jsondict = json.loads(jsonstring)
-        resourceType = jsondict.pop('resourceType')
+        return cls.fromNative(jsondict)
+        # resourceType = jsondict.pop('resourceType')
+        #
+        # if resourceType != cls.__name__:
+        #     class_ = eval_type_string(resourceType)
+        #
+        #     if not issubclass(class_, cls):
+        #         raise Exception('Cannot marshall a {} from a {}: not a subclass!'.format(root.tag, cls.__name__))
+        #
+        #     return class_()._fromJSON(jsondict)
+        #
+        # return cls()._fromJSON(jsondict)
+    # def fromJSON
+
+    @classmethod
+    def fromNative(cls, dictionary):
+        """..."""
+        dictionary = copy.deepcopy(dictionary)
+        resourceType = dictionary.pop('resourceType')
 
         if resourceType != cls.__name__:
             class_ = eval_type_string(resourceType)
-            
+
             if not issubclass(class_, cls):
                 raise Exception('Cannot marshall a {} from a {}: not a subclass!'.format(root.tag, cls.__name__))
-            
-            return class_()._fromJSON(jsondict)
-            
-        return cls()._fromJSON(jsondict)
-    # def fromJSON
+
+            # print(f'calling class._fromJSON ... ')
+
+            return class_()._fromJSON(dictionary)
+
+        return cls()._fromJSON(dictionary)
 
     def _fromJSON(self, obj):
         if isinstance(obj, dict):
@@ -657,71 +688,71 @@ class FHIRBase(object):
 
         if isinstance(obj, list):
             # List with values for self.attr_name
-            return 
-        
+            return
+
         # Simple type!
         return obj
 
     def _fromDict(self, jsondict):
         # Iterate over *my* attributes
         processed = []
-        
+
         # First the keys starting with an underscore ('_')
         # These items contain the extended information for simple
         # types: {'id': 'patient1', '_id': {'id': 'id.id'}}
         for attr, obj in jsondict.items():
             if not attr.startswith('_'):
                 continue
-            
+
             prop, prop_def, prop_type = self._getPropertyDetailsForName(attr)
             attr = attr.replace('_', '', 1)
-            
+
             regular_value = jsondict.get(attr)
-            
+
             if isinstance(obj, dict):
                 # Complex type
                 value = prop_type(regular_value)
                 value._fromDict(obj)
-                    
+
             elif isinstance(obj, list):
                 # Should be a list of dicts
                 value = [prop_type(v) for v in regular_value]
                 for v, extended_info in zip(value, obj):
                     v._fromDict(extended_info)
-            
+
             value = prop_type(regular_value)
             value._fromDict(obj)
-            
+
             setattr(self, prop.name, value)
             processed.append(attr)
-        
+
         # Then the regular keys/attributes
         for attr, obj in jsondict.items():
-            # obj can be dict, list or simple type            
+            # obj can be dict, list or simple type
             if attr.startswith('_') or attr in processed:
                 continue
-                
+
             prop, prop_def, prop_type = self._getPropertyDetailsForName(attr)
-            
+
             if inspect.isclass(prop_type) and issubclass(prop_type, Resource):
                 resourceType = obj.pop('resourceType')
                 class_ = eval_type_string(resourceType)
                 value = class_()._fromJSON(obj)
-            
+
             elif isinstance(obj, dict):
                 # Complex type
                 value = prop_type()
                 value._fromDict(obj)
-                    
+
             elif isinstance(obj, list):
                 # Could be a list of dicts or simple values;
                 value = [prop_type()._fromJSON(i) for i in obj]
-                
+
             else:
                 value = prop_type(obj)
 
             setattr(self, prop.name, value)
-            
+
         return self
     # def _fromDict
 
@@ -730,10 +761,10 @@ class FHIRBase(object):
             format_ = format_.upper()
             func = getattr(self, 'to' + format_)
             return func()
-        
+
         raise UnsupportedFormatError(format_)
     # def dumps
-   
+
     def toXML(self, parent, path):
         """Return an XML representation of this object."""
         # Iterate over *my* attributes.
@@ -741,11 +772,11 @@ class FHIRBase(object):
             value = getattr(self, attr)
             desc = getattr(type(self), attr).definition
             path_str = '.'.join(path + [attr, ])
-            
+
             if value is not None:
                 if desc.repr == 'xmlAttr':
                     parent.set(attr, str(value))
-            
+
                 # elif issubclass(desc.type, xhtml):
                 elif desc.repr == 'text':
                     parent.append( ET.fromstring(str(value)) )
@@ -753,34 +784,34 @@ class FHIRBase(object):
                 elif isinstance(value, PropertyList):
                     for p in value:
                         p.toXML(ET.SubElement(parent, attr), path + [attr, ])
-                        
+
                 elif isinstance(value, FHIRBase):
                     if isinstance(desc.type, list):
                         class_name = upper_first_letter(value.__class__.__name__)
                         attr = attr + class_name
                     value.toXML(ET.SubElement(parent, attr), path + [attr, ])
-                
+
                 else:
                     print(value, type(value))
                     raise Exception('unknown property type!?')
-        
+
         # Only the root element needs to generate the actual XML.
         if len(path) == 1:
-            x = xml.dom.minidom.parseString(ET.tostring(parent)) 
+            x = xml.dom.minidom.parseString(ET.tostring(parent))
             pretty_xml = x.toprettyxml(indent='  ')
 
             if isinstance(self, Element):
                 pretty_xml = pretty_xml.replace('<?xml version="1.0" ?>\n', '')
-            
+
             # return ET.tostring(parent)
             return pretty_xml
     # def toXML
-    
+
     def toJSON(self):
         """Return a JSON representation of this object."""
         return json.dumps(self.toDict(), indent=2)
     # def toJSON
-    
+
     def toNative(self):
         return self.toDict()
     # def toNative
@@ -790,7 +821,7 @@ class FHIRBase(object):
         # dict in python3 already keeps order
         retval = dict()
 
-        if isinstance(self, Resource):            
+        if isinstance(self, Resource):
             retval['resourceType'] = self.__class__.__name__
 
         # Iterate over *my* attributes.
@@ -802,7 +833,7 @@ class FHIRBase(object):
                 # BaseType: basic type for basic/simple types.
                 if isinstance(property_def.type, list):
                     class_name = upper_first_letter(value.__class__.__name__)
-                    attr = attr + class_name 
+                    attr = attr + class_name
 
                 v = value.toNative()
                 if v != None:
@@ -811,7 +842,7 @@ class FHIRBase(object):
                 json_dict = value.toDict()
                 if json_dict:
                     retval['_' + attr] = json_dict
-                
+
             elif isinstance(value, PropertyList):
                 # For attributes with cardinality > 1
                 listvalues = list()
@@ -827,7 +858,7 @@ class FHIRBase(object):
                         _listvalues.append(_v)
                     else:
                         listvalues.append( v.toDict() )
-                
+
                 if listvalues:
                     retval[attr] = listvalues
 
@@ -839,49 +870,49 @@ class FHIRBase(object):
                 # Other Elements and Resources
                 if isinstance(property_def.type, list):
                     class_name = upper_first_letter(value.__class__.__name__)
-                    attr = attr + class_name 
+                    attr = attr + class_name
 
                 json_dict = value.toDict()
 
                 if json_dict:
                     retval[attr] = json_dict
-            
+
         return retval
     # def toDict
-# class FHIRBase 
+# class FHIRBase
 
 class Element(FHIRBase):
     """Base definition for all elements in a resource."""
-    _timestamp = 1548408558
+    _timestamp = 1594147810
     _url = 'http://hl7.org/fhir/StructureDefinition/Element'
-    
+
     id = Property('id', 'id', '0', '1')
     extension = Property('extension', 'Extension', '0', '*')
-    
+
     def toXML(self, parent=None, path=None):
         """Return an XML representation of this object."""
         if parent is None:
             tag = self.__class__.__name__
             path = [tag, ]
             parent = ET.Element(tag)
-        
+
         return super().toXML(parent, path)
 # class Element
 
 class Extension(Element):
     """Optional Extensions Element - found in all resources."""
     _url = 'http://hl7.org/fhir/StructureDefinition/Extension'
-    
+
     url = Property('url', 'uri', '1', '1', 'xmlAttr')
     value = Property(
-        'value', 
-        ['boolean', 'integer', 'decimal', 'base64Binary', 'instant', 'string', 
-            'uri', 'date', 'dateTime', 'time', 'code', 'oid', 'id', 
-            'unsignedInt', 'positiveInt', 'markdown', 'Annotation', 'Attachment', 
-            'Identifier', 'CodeableConcept', 'Coding', 'Quantity', 'Range', 
-            'Period', 'Ratio', 'SampledData', 'Signature', 'HumanName', 'Address', 
-            'ContactPoint', 'Timing', 'Reference', 'Meta'], 
-        '0', 
+        'value',
+        ['boolean', 'integer', 'decimal', 'base64Binary', 'instant', 'string',
+            'uri', 'date', 'dateTime', 'time', 'code', 'oid', 'id',
+            'unsignedInt', 'positiveInt', 'markdown', 'Annotation', 'Attachment',
+            'Identifier', 'CodeableConcept', 'Coding', 'Quantity', 'Range',
+            'Period', 'Ratio', 'SampledData', 'Signature', 'HumanName', 'Address',
+            'ContactPoint', 'Timing', 'Reference', 'Meta'],
+        '0',
         '1'
     )
 # class Extension
@@ -889,11 +920,11 @@ class Extension(Element):
 class Reference(Element):
     """
     A reference from one resource to another.
-    
+
     Autogenerated class.
     """
     _url = 'http://hl7.org/fhir/StructureDefinition/Reference'
-    
+
     reference = Property('reference', 'string', '0', '1')
     identifier = Property('identifier', 'Identifier', '0', '1')
     display = Property('display', 'string', '0', '1')
@@ -918,7 +949,7 @@ class BaseType(Element):
     def __init__(self, value=None, **kwargs):
         super().__init__(**kwargs)
         self.value = value
-    
+
     def __repr__(self):
         """repr(x) <==> x.__repr__()"""
         return repr(self.value)
@@ -926,7 +957,7 @@ class BaseType(Element):
     def toNative(self):
         if self.value is None:
             return None
-        
+
         type_ = type(self.value)
         return type_(self.value)
 # class BaseType
@@ -941,23 +972,23 @@ class BaseType(Element):
 #  - *no* timezone
 #  - regex: -?[0-9]{4}(-(0[1-9]|1[0-2])(-(0[0-9]|[1-2][0-9]|3[0-1]))?)?
 
-# time: 
+# time:
 #  - {xs:time}, *no* timezone
 #  - regex: ([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?
-# 
-# dateTime: 
+#
+# dateTime:
 #  - {xs:dateTime, xs:date, xs:gYearMonth, xs:gYear}
 #  - timezone *conditional* on population of hours & minutes
 #  - regex: -?[0-9]{4}(-(0[1-9]|1[0-2])(-(0[0-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?
-# 
+#
 # instant: {xs:dateTime}
 #  - timezone *required*
 #  - regex: <none>?
 class dateTimeBase(BaseType):
     """Base class for date/time classes.
-    
+
     The currently available modules are not capable of storing None values for
-    months, days, hours, etc. As a side effect, parsing a string with only a 
+    months, days, hours, etc. As a side effect, parsing a string with only a
     year e.g. strptime('2015', '%Y') automatically sets the month to january!?
     """
     _allowed_attributes = list(FHIRBase._allowed_attributes)
@@ -978,29 +1009,29 @@ class dateTimeBase(BaseType):
             # question, but this makes generating the subclasses much easier.
             if isinstance(self, dateTime) or isinstance(self, instant):
                 p = dateutil.parser.parse(value)
-                
+
                 if isinstance(self, dateTime) and (p.hour or p.minute or p.second) and (p.tzinfo is None):
                     args = [value, self.__class__.__name__]
                     raise ValueError('"{}" is not a valid {}'.format(*args))
-                
+
                 elif isinstance(self, instant) and (p.tzinfo is None):
                     args = [value, self.__class__.__name__]
                     raise ValueError('"{}" is not a valid {}'.format(*args))
-            
+
             return True
         elif self._regex is None:
-            
+
             return True
         else:
             args = [value, self.__class__.__name__]
             raise ValueError('"{}" is not a valid {}'.format(*args))
-            
+
     def __repr__(self):
         return repr(self._value)
-    
+
     def __str__(self):
         return str(self._value)
-# class dateTimeBase 
+# class dateTimeBase
 
 
 # Import basic types into module/package 'fhir.model'
@@ -1034,6 +1065,7 @@ from .attachment import Attachment
 from .backboneelement import BackboneElement
 from .bundle import Bundle
 from .codeableconcept import CodeableConcept
+from .codeableconcept import CodeableConcept
 from .coding import Coding
 from .composition import Composition
 from .contactdetail import ContactDetail
@@ -1041,6 +1073,8 @@ from .contactpoint import ContactPoint
 from .domainresource import DomainResource
 from .dosage import Dosage
 from .duration import Duration
+from .encounter import Encounter
+from .episodeofcare import EpisodeOfCare
 from .humanname import HumanName
 from .identifier import Identifier
 from .medication import Medication
@@ -1048,6 +1082,7 @@ from .medicationrequest import MedicationRequest
 from .meta import Meta
 from .narrative import Narrative
 from .observation import Observation
+from .operationoutcome import OperationOutcome
 from .patient import Patient
 from .period import Period
 from .quantity import Quantity
@@ -1059,5 +1094,6 @@ from .sampleddata import SampledData
 from .signature import Signature
 from .timing import Timing
 from .usagecontext import UsageContext
+from .valueset import ValueSet
 
 # __all__ = []

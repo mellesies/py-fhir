@@ -1,0 +1,2 @@
+excludeDirectoriesInBrowser = "{__pycache__,}"
+includeFilesInBrowser = "{.gitignore}"

@@ -17,13 +17,13 @@ from fhir.model import Extension, dateTime, CodeableConcept, Coding
 from fhir.model import VERSION_STR
 
 class TestSerialization(unittest.TestCase):
-    
+
     def getComplexPatient(self):
         p = fhir.model.Patient(id='patient1')
         p.active = True
 
         identifier = fhir.model.Identifier(
-            value='123456789', 
+            value='123456789',
             system='urn:oid:1.2.36.146.595.217.0.1'
         )
         p.identifier = [identifier]
@@ -32,31 +32,31 @@ class TestSerialization(unittest.TestCase):
 
         if VERSION <= fhir.model.FHIR_DSTU2:
             name = fhir.model.HumanName(
-                use='official', 
-                given=['Melle', 'Sjoerd'], 
+                use='official',
+                given=['Melle', 'Sjoerd'],
                 family=['Sieswerda']
             )
         elif fhir.model.FHIR_DSTU2 < VERSION <= fhir.model.FHIR_R4:
             name = fhir.model.HumanName(
-                use='official', 
-                given=['Melle', 'Sjoerd'], 
+                use='official',
+                given=['Melle', 'Sjoerd'],
                 family='Sieswerda'
             )
 
         p.name = [name]
         p.gender = 'male'
-        
+
         p.birthDate = '1980-06-09'
         extension = Extension(
             url="http://hl7.org/fhir/StructureDefinition/patient-birthTime",
             value=dateTime("1974-12-25T14:35:45-05:00")
         )
         p.birthDate.extension = [extension]
-        
+
         p.deceased = fhir.model.boolean(False)
         p.deceased.id = 'deceasedBoolean.id'
         return p
-    
+
     def test_toJSONAttrWithoutValue(self):
         jsonstring = '{"resourceType": "Patient", "_id": {"id": "haha"}}'
         p = fhir.model.Patient()
@@ -79,7 +79,7 @@ class TestSerialization(unittest.TestCase):
     def test_referenceAllowedProfiles(self):
         xmlstring = fhir.get_example_data('patient-example', 'xml')
         p = fhir.model.Patient.fromXML(xmlstring)
-        
+
         # _allowed_profiles
 
     def test_examplePatientFromXML(self):
@@ -105,7 +105,7 @@ class TestSerialization(unittest.TestCase):
     def test_exampleBundleFromXML(self):
         xmlstring = fhir.get_example_data('bundle-example', 'xml')
         b = fhir.model.Bundle.fromXML(xmlstring)
-        
+
         # Cannot do a direct compare due to the fact namespaces can
         # be rendered in different ways.
         self.assertEquals(b.id, 'bundle-example')
@@ -118,9 +118,41 @@ class TestSerialization(unittest.TestCase):
         """Test loading and serializing a patient from/to JSON."""
         jsonstring = fhir.get_example_data('bundle-example', 'json')
         b = fhir.model.Bundle.fromJSON(jsonstring)
-        
+
         diff = jsondiff.diff(jsonstring, b.toJSON(), load=True)
         self.assertEquals(diff, {})
 
+    def test_episodeOfCareFromNative(self):
+        data = {
+            "resourceType": "EpisodeOfCare",
+            "extension": [
+                {
+                    "url": "https://fhir.zakbroek.com/extensions/EpisodeOfCare-title",
+                    "valueString": "Ondergewicht"
+                }
+            ],
+            "status": "active",
+            "type": [{
+                "coding": [
+                    {
+                        "system": "http://terminology.hl7.org/CodeSystem/episodeofcare-type",
+                        "code": "hacc",
+                        "display": "Home and Community Care"
+                    }
+                ]
+            }],
+            "patient": {
+            "reference": "Patient/00020"
+            }
+        }
 
-        
+        fhir.model.EpisodeOfCare.fromNative(data)
+
+    def test_exampleQuestionnaireFromJSON(self):
+        """Test loading and serializing a Questionnaire from/to JSON."""
+        jsonstring = fhir.get_example_data('questionnaire-TestNesting1', 'json')
+        b = fhir.model.Questionnaire.fromJSON(jsonstring)
+
+        diff = jsondiff.diff(jsonstring, b.toJSON(), load=True)
+        self.assertEquals(diff, {})
+
